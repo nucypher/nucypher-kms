@@ -15,6 +15,7 @@ You should have received a copy of the GNU Affero General Public License
 along with nucypher.  If not, see <https://www.gnu.org/licenses/>.
 """
 
+from base64 import b64decode
 import json
 from collections import OrderedDict
 from typing import Optional, Tuple
@@ -185,6 +186,20 @@ class TreasureMap:
         which is included in it,
         """
         return self._id
+
+    @classmethod
+    def from_obj_or_bytes(cls, obj):
+
+        if isinstance(obj, cls):
+            return obj
+
+        # TODO: This LBYL is ugly and fraught with danger.  NRN
+        elif isinstance(obj, bytes):
+            return cls.from_bytes(obj)
+
+        elif isinstance(obj, str):
+            tmap_bytes = obj.encode()
+            return cls.from_bytes(b64decode(tmap_bytes))
 
     @classmethod
     def from_bytes(cls, bytes_representation, verify=True):
