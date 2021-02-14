@@ -54,6 +54,6 @@ def test_get_cert_from_running_seed_node(lonely_ursula_maker):
     yield deferToThread(any_other_ursula.load_seednodes)
     assert firstula in any_other_ursula.known_nodes
 
-    firstula_as_learned = any_other_ursula.known_nodes[firstula.checksum_address]
+    firstula_as_learned = any_other_ursula.known_nodes.get_node(firstula.checksum_address)
     firstula_as_learned.mature()
     assert certificate_as_deployed == firstula_as_learned.certificate

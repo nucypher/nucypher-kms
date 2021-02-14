@@ -15,10 +15,9 @@ You should have received a copy of the GNU Affero General Public License
 along with nucypher.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-from bisect import bisect_right
-from itertools import accumulate
 import random
-import math
+from typing import Dict, Iterable, List, Tuple, Type, Union, Any, Optional, cast
+
 import sys
 from constant_sorrow.constants import (  # type: ignore
     CONTRACT_CALL,
@@ -30,7 +29,6 @@ from eth_typing.encoding import HexStr
 from eth_typing.evm import ChecksumAddress
 from eth_utils.address import to_checksum_address
 from hexbytes.main import HexBytes
-from typing import Dict, Iterable, List, Tuple, Type, Union, Any, Optional, cast
 from web3.contract import Contract, ContractFunction
 from web3.types import Wei, Timestamp, TxReceipt, TxParams, Nonce
 
@@ -73,6 +71,7 @@ from nucypher.types import (
     Evidence
 )
 from nucypher.utilities.logging import Logger  # type: ignore
+from nucypher.utilities.sampler import WeightedSampler
 
 
 class EthereumContractAgent:
@@ -1675,58 +1674,6 @@ class ContractAgency:
         agent_class: Type[EthereumContractAgent] = getattr(agents_module, agent_name)
         agent: EthereumContractAgent = cls.get_agent(agent_class=agent_class, registry=registry, provider_uri=provider_uri)
         return agent
-
-
-class WeightedSampler:
-    """
-    Samples random elements with probabilities proportional to given weights.
-    """
-
-    def __init__(self, weighted_elements: Dict[Any, int]):
-        if weighted_elements:
-            elements, weights = zip(*weighted_elements.items())
-        else:
-            elements, weights = [], []
-        self.totals = list(accumulate(weights))
-        self.elements = elements
-        self.__length = len(self.totals)
-
-    def sample_no_replacement(self, rng, quantity: int) -> list:
-        """
-        Samples ``quantity`` of elements from the internal array.
-        The probablity of an element to appear is proportional
-        to the weight provided to the constructor.
-
-        The elements will not repeat; every time an element is sampled its weight is set to 0.
-        (does not mutate the object and only applies to the current invocation of the method).
-        """
-
-        if quantity == 0:
-            return []
-
-        if quantity > len(self):
-            raise ValueError("Cannot sample more than the total amount of elements without replacement")
-
-        samples = []
-
-        for i in range(quantity):
-            position = rng.randint(0, self.totals[-1] - 1)
-            idx = bisect_right(self.totals, position)
-            samples.append(self.elements[idx])
-
-            # Adjust the totals so that they correspond
-            # to the weight of the element `idx` being set to 0.
-            prev_total = self.totals[idx - 1] if idx > 0 else 0
-            weight = self.totals[idx] - prev_total
-            for j in range(idx, len(self.totals)):
-                self.totals[j] -= weight
-
-        self.__length -= quantity
-
-        return samples
-
-    def __len__(self):
-        return self.__length
 
 
 class StakersReservoir:

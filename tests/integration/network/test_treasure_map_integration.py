@@ -17,11 +17,12 @@
 
 import pytest
 
+from nucypher.config.constants import TEMPORARY_DOMAIN
+from nucypher.acumen.perception import FleetSensor
 from nucypher.characters.lawful import Ursula
 from nucypher.crypto.api import keccak_digest
 from nucypher.datastore.models import TreasureMap as DatastoreTreasureMap
 from nucypher.policy.collections import TreasureMap as FederatedTreasureMap
-from tests.utils.middleware import MockRestMiddleware
 
 
 def test_alice_creates_policy_with_correct_hrac(federated_alice, federated_bob, idle_federated_policy):
@@ -53,7 +54,10 @@ def test_treasure_map_stored_by_ursula_is_the_correct_one_for_bob(federated_alic
     """
 
     treasure_map_id = enacted_federated_policy.treasure_map.public_id()
-    an_ursula = federated_bob.matching_nodes_among(federated_ursulas)[0]
+    sensor = FleetSensor(domain=TEMPORARY_DOMAIN)
+    for u in federated_ursulas:
+        sensor.track(node_or_sprout=u)
+    an_ursula = federated_bob.matching_nodes_among(sensor)[0]
     with an_ursula.datastore.describe(DatastoreTreasureMap, treasure_map_id) as treasure_map_record:
         treasure_map_on_network = FederatedTreasureMap.from_bytes(treasure_map_record.treasure_map)
 
@@ -110,7 +114,7 @@ def test_alice_does_not_update_with_old_ursula_info(federated_alice, federated_u
     old_metadata = bytes(ursula)
 
     # Alice has remembered Ursula.
-    assert federated_alice.known_nodes[ursula.checksum_address] == ursula
+    assert federated_alice.known_nodes.get_node(checksum_address=ursula.checksum_address) == ursula
 
     # But now, Ursula wants to sign and date her interface info again.  This causes a new timestamp.
     ursula._sign_and_date_interface_info()
@@ -126,5 +130,5 @@ def test_alice_does_not_update_with_old_ursula_info(federated_alice, federated_u
     # ...she can't learn about old ursula anymore.
     federated_alice.remember_node(old_ursula)
 
-    new_metadata = bytes(federated_alice.known_nodes[ursula.checksum_address])
+    new_metadata = bytes(federated_alice.known_nodes.get_node(checksum_address=ursula.checksum_address))
     assert new_metadata != old_metadata

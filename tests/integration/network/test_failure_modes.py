@@ -35,7 +35,7 @@ def test_alice_can_grant_even_when_the_first_nodes_she_tries_are_down(federated_
     m, n = 2, 3
     policy_end_datetime = maya.now() + datetime.timedelta(days=5)
     label = b"this_is_the_path_to_which_access_is_being_granted"
-    federated_alice.known_nodes._nodes = {}
+    federated_alice.known_nodes._FleetSensor__nodes = {}
 
     federated_alice.network_middleware = NodeIsDownMiddleware()
 
@@ -92,7 +92,7 @@ def test_alice_can_grant_even_when_the_first_nodes_she_tries_are_down(federated_
 
 
 def test_node_has_changed_cert(federated_alice, federated_ursulas):
-    federated_alice.known_nodes._nodes = {}
+    federated_alice.known_nodes._FleetSensor__nodes = {}
     federated_alice.network_middleware = NodeIsDownMiddleware()
     federated_alice.network_middleware.client.certs_are_broken = True
 

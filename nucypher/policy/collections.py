@@ -41,7 +41,12 @@ from nucypher.crypto.api import encrypt_and_sign, keccak_digest
 from nucypher.crypto.api import verify_eip_191
 from nucypher.crypto.constants import HRAC_LENGTH
 from nucypher.crypto.kits import UmbralMessageKit
-from nucypher.crypto.signing import InvalidSignature, Signature, signature_splitter, SignatureStamp
+from nucypher.crypto.signing import (
+    InvalidSignature,
+    Signature,
+    signature_splitter,
+    SignatureStamp
+)
 from nucypher.crypto.splitters import capsule_splitter, key_splitter
 from nucypher.crypto.splitters import cfrag_splitter
 from nucypher.crypto.utils import (

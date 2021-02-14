@@ -254,7 +254,7 @@ class Policy(ABC):
         if address not in self.alice.known_nodes:
             raise RuntimeError(f"{address} is not known")
 
-        ursula = self.alice.known_nodes[address]
+        ursula = self.alice.known_nodes.get_node(checksum_address=address)
         arrangement = Arrangement.from_alice(alice=self.alice, expiration=self.expiration)
 
         self.log.debug(f"Proposing arrangement {arrangement} to {ursula}")
@@ -271,7 +271,7 @@ class Policy(ABC):
         # We could just return the arrangement and get the Ursula object
         # from `known_nodes` later, but when we introduce slashing in FleetSensor,
         # the address can already disappear from `known_nodes` by that time.
-        return (ursula, arrangement)
+        return ursula, arrangement
 
     @abstractmethod
     def _make_reservoir(self, handpicked_addresses: Sequence[ChecksumAddress]) -> MergedReservoir:
@@ -515,7 +515,7 @@ class FederatedPolicy(Policy):
 
     def _make_reservoir(self, handpicked_addresses):
         addresses = {
-            ursula.checksum_address: 1 for ursula in self.alice.known_nodes
+            ursula.checksum_address: 1 for ursula in self.alice.known_nodes.get_nodes()
             if ursula.checksum_address not in handpicked_addresses}
 
         return MergedReservoir(handpicked_addresses, StakersReservoir(addresses))

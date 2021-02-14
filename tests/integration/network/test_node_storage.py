@@ -46,6 +46,7 @@ def test_one_node_stores_a_bunch_of_others(federated_ursulas, lonely_ursula_make
 
     yield deferToThread(start_lonely_learning_loop)
 
-    assert list(newcomer.known_nodes)
-    assert len(list(newcomer.known_nodes)) == len(list(newcomer.node_storage.all(True)))
-    assert set(list(newcomer.known_nodes)) == set(list(newcomer.node_storage.all(True)))
+    nodes = list(newcomer.known_nodes.get_nodes())
+    assert nodes
+    assert len(nodes) == len(list(newcomer.node_storage.all(True)))
+    assert set(nodes) == set(list(newcomer.node_storage.all(True)))

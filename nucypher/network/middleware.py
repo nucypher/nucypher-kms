@@ -24,6 +24,8 @@ from bytestring_splitter import VariableLengthBytestring
 from constant_sorrow.constants import CERTIFICATE_NOT_SAVED, EXEMPT_FROM_VERIFICATION
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
+from requests.exceptions import SSLError
+from requests.packages.urllib3.exceptions import RequestError
 
 from nucypher.blockchain.eth.networks import NetworksInventory
 from nucypher.crypto.signing import signature_splitter
@@ -84,8 +86,8 @@ class NucypherMiddlewareClient:
         No cleaning needed.
         """
 
-    def node_information(self, host, port, certificate_filepath=None):
-        # The only time a node is exempt from verification - when we are first getting its info.
+    def node_information(self, host, port, certificate_filepath):
+        # TODO: The only time a node is exempt from verification - when we are first getting its info.
         response = self.get(node_or_sprout=EXEMPT_FROM_VERIFICATION,
                             host=host, port=port,
                             path="public_information",
@@ -116,8 +118,8 @@ class NucypherMiddlewareClient:
                 certificate_filepath = node_certificate_filepath
 
             method = getattr(http_client, method_name)
-
             url = f"https://{host}/{path}"
+
             response = self.invoke_method(method, url, verify=certificate_filepath, *args, **kwargs)
             cleaned_response = self.response_cleaner(response)
             if cleaned_response.status_code >= 300:

@@ -85,8 +85,7 @@ def test_alice_can_learn_about_a_whole_bunch_of_ursulas(highperf_mocked_alice):
 
     assert elapsed < 6  # 6 seconds is still a little long to discover 4000 out of 5000 nodes, but before starting the optimization that went with this test, this operation took about 18 minutes on jMyles' laptop.
     assert VerificationTracker.node_verifications == 1  # We have only verified the first Ursula.
-    assert sum(
-        isinstance(u, Ursula) for u in highperf_mocked_alice.known_nodes) < 20  # We haven't instantiated many Ursulas.
+    assert sum(isinstance(u, Ursula) for u in highperf_mocked_alice.known_nodes.get_nodes()) < 20  # We haven't instantiated many Ursulas.
     VerificationTracker.node_verifications = 0  # Cleanup
 
 
@@ -129,7 +128,7 @@ def test_alice_verifies_ursula_just_in_time(fleet_of_highperf_mocked_ursulas,
                                     expiration=maya.when('next week'),
                                     publish_treasure_map=False)
     # TODO: Make some assertions about policy.
-    total_verified = sum(node.verified_node for node in highperf_mocked_alice.known_nodes)
+    total_verified = sum(node.verified_node for node in highperf_mocked_alice.known_nodes.get_nodes())
     # Alice may be able to verify more than `n`, but certainly not less,
     # otherwise `grant()` would fail.
     assert total_verified >= 30

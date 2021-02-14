@@ -50,6 +50,8 @@ from constant_sorrow.constants import INIT
 def token_airdrop(token_agent, amount: NU, origin: str, addresses: List[str]):
     """Airdrops tokens from creator address to all other addresses!"""
 
+    token_agent.blockchain.transacting_power.activate(password=INSECURE_DEVELOPMENT_PASSWORD)
+
     def txs():
         args = {'from': origin, 'gasPrice': token_agent.blockchain.client.gas_price}
         for address in addresses:

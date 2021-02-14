@@ -160,7 +160,7 @@ def get_external_ip_from_known_nodes(known_nodes: FleetSensor,
     """
     if len(known_nodes) < sample_size:
         return  # There are too few known nodes
-    sample = random.sample(list(known_nodes), sample_size)
+    sample = random.sample(list(known_nodes.get_nodes()), sample_size)
     client = NucypherMiddlewareClient()
     for node in sample:
         ip = _request_from_node(teacher=node, client=client)

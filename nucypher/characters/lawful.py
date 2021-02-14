@@ -39,6 +39,10 @@ from constant_sorrow.constants import (
     READY,
     INVALIDATED
 )
+from constant_sorrow.constants import (
+    VERIFIED,
+    UNVERIFIED
+)
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurve
 from cryptography.hazmat.primitives.serialization import Encoding
@@ -61,6 +65,7 @@ from umbral.kfrags import KFrag
 from umbral.signing import Signature
 
 import nucypher
+from nucypher.acumen.comprehension import VERIFICATION_SORTING_WEIGHTS
 from nucypher.acumen.nicknames import Nickname
 from nucypher.acumen.perception import FleetSensor
 from nucypher.blockchain.eth.actors import BlockchainPolicyAuthor, Worker
@@ -100,9 +105,13 @@ from nucypher.network.server import ProxyRESTServer, TLSHostingPower, make_rest_
 from nucypher.network.trackers import AvailabilityTracker
 from nucypher.utilities.logging import Logger
 from nucypher.utilities.networking import validate_worker_ip
+from nucypher.utilities.sampler import WeightedSampler
 
 
 class Alice(Character, BlockchainPolicyAuthor):
+
+    DISCOVERY_LABELS = (VERIFIED, )
+
     banner = ALICE_BANNER
     _interface_class = AliceInterface
     _default_crypto_powerups = [SigningPower, DecryptingPower, DelegatingPower]
@@ -160,6 +169,7 @@ class Alice(Character, BlockchainPolicyAuthor):
                            federated_only=federated_only,
                            checksum_address=checksum_address,
                            network_middleware=network_middleware,
+                           discovery_labels=self.DISCOVERY_LABELS,  # TODO: Unhardcode?
                            *args, **kwargs)
 
         if is_me and not federated_only:  # TODO: #289
@@ -379,7 +389,7 @@ class Alice(Character, BlockchainPolicyAuthor):
         else:
             failed_revocations = dict()
             for node_id in policy.revocation_kit.revokable_addresses:
-                ursula = self.known_nodes[node_id]
+                ursula = self.known_nodes.get_node(checksum_address=node_id)
                 revocation = policy.revocation_kit[node_id]
                 try:
                     response = self.network_middleware.revoke_arrangement(ursula, revocation)
@@ -701,7 +711,7 @@ class Bob(Character):
                     capsules_to_include.append(capsule)
 
             # TODO: Bob crashes if he hasn't learned about this Ursula #999
-            ursula = self.known_nodes[node_id]
+            ursula = self.known_nodes.get_node(checksum_address=node_id)
 
             if capsules_to_include:
                 work_order = WorkOrder.construct_by_bob(arrangement_id=arrangement_id,
@@ -938,8 +948,8 @@ class Bob(Character):
     def matching_nodes_among(self,
                              nodes: FleetSensor,
                              no_less_than=7):  # Somewhat arbitrary floor here.
-        # Look for nodes whose checksum address has the second character of Bob's encrypting key in the first
-        # few characters.
+        # Look for nodes whose checksum address has the second character of Bob's
+        # encrypting key in the first few characters.
         # Think of it as a cheap knockoff hamming distance.
         # The good news is that Bob can construct the list easily.
         # And - famous last words incoming - there's no cognizable attack surface.
@@ -947,28 +957,26 @@ class Bob(Character):
         # store a TreasureMap.  And then... ???... profit?
 
         # Sanity check - do we even have enough nodes?
-        if len(nodes) < no_less_than:
+        if len(list(nodes.get_nodes())) < no_less_than:
             raise ValueError(f"Can't select {no_less_than} from {len(nodes)} (Fleet state: {nodes.FleetState})")
 
         search_boundary = 2
         target_nodes = []
         target_hex_match = self.public_keys(DecryptingPower).hex()[1]
         while len(target_nodes) < no_less_than:
-            target_nodes = []
             search_boundary += 2
-
             if search_boundary > 42:  # We've searched the entire string and can't match any.  TODO: Portable learning is a nice idea here.
                 # Not enough matching nodes.  Fine, we'll just publish to the first few.
                 try:
                     # TODO: This is almost certainly happening in a test.  If it does happen in production, it's a bit of a problem.  Need to fix #2124 to mitigate.
-                    target_nodes = list(nodes._nodes.values())[0:6]
+                    target_nodes = list(nodes.get_nodes())[0:6]
                     return target_nodes
                 except IndexError:
                     raise self.NotEnoughNodes("There aren't enough nodes on the network to enact this policy.  Unless this is day one of the network and nodes are still getting spun up, something is bonkers.")
 
             # TODO: 1995 all throughout here (we might not (need to) know the checksum address yet; canonical will do.)
             # This might be a performance issue above a few thousand nodes.
-            target_nodes = [node for node in nodes if target_hex_match in node.checksum_address[2:search_boundary]]
+            target_nodes = [node for node in nodes.get_nodes() if target_hex_match in node.checksum_address[2:search_boundary]]
         return target_nodes
 
     def make_web_controller(drone_bob, crash_on_error: bool = False):
@@ -1022,7 +1030,8 @@ class Ursula(Teacher, Character, Worker):
     # TLSHostingPower still can enjoy default status, but on a different class  NRN
     _default_crypto_powerups = [SigningPower, DecryptingPower]
 
-    _pruning_interval = 60  # seconds
+    _datastore_pruning_interval = 60  # seconds
+    _node_pruning_interval = 20  # seconds # TODO: reduce or callback instead
 
     class NotEnoughUrsulas(Learner.NotEnoughTeachers, StakingEscrowAgent.NotEnoughStakers):
         """
@@ -1062,6 +1071,7 @@ class Ursula(Teacher, Character, Worker):
                  abort_on_learning_error: bool = False,
                  federated_only: bool = False,
                  start_learning_now: bool = None,
+                 node_garbage_collection: bool = True,
                  crypto_power=None,
                  tls_curve: EllipticCurve = None,
                  known_nodes: Iterable = None,
@@ -1104,9 +1114,12 @@ class Ursula(Teacher, Character, Worker):
             self._availability_tracker = AvailabilityTracker(ursula=self)
 
             # Datastore Pruning
-            self.__pruning_task = None
             self._prune_datastore = prune_datastore
             self._datastore_pruning_task = LoopingCall(f=self.__prune_datastore)
+
+            # Known nodes pruning
+            self._node_garbage_collection = node_garbage_collection
+            self._node_pruning_task = LoopingCall(f=self.__prune_nodes)
 
         #
         # Ursula the Decentralized Worker (Self)
@@ -1223,6 +1236,7 @@ class Ursula(Teacher, Character, Worker):
 
     def __prune_datastore(self) -> None:
         """Deletes all expired arrangements, kfrags, and treasure maps in the datastore."""
+        # TODO: Relocate this method to datastore class
         now = maya.MayaDT.from_datetime(datetime.fromtimestamp(self._datastore_pruning_task.clock.seconds()))
         try:
             with self.datastore.query_by(PolicyArrangement,
@@ -1260,12 +1274,47 @@ class Ursula(Teacher, Character, Worker):
         """Called immediately before running services"""
         validate_worker_ip(worker_ip=self.rest_interface.host)
 
+    @property
+    def slow_mode(self) -> bool:
+        return self._learning_task.interval is self._SHORT_LEARNING_DELAY
+
+    def __prune_nodes(self) -> None:
+        """
+        # TODO: Inject custom node pruning strategies here (think configuration)
+        """
+
+        # Take advantage of otherwise idle time.
+        if not self.slow_mode:
+            return
+
+        # TODO: hmmm...
+        bucket_quantity = 3
+        node_quantity = 3
+
+        # Select a bucket
+        sampler = WeightedSampler(weighted_elements=VERIFICATION_SORTING_WEIGHTS)
+        buckets = sampler.sample_no_replacement(rng=random.SystemRandom(), quantity=bucket_quantity)
+
+        # Process
+        for bucket in buckets:
+            reservoir = list(self.known_nodes.get_nodes(label=bucket))
+            if len(reservoir) >= node_quantity:
+                # Verify some node from the bucket
+                nodes = random.sample(reservoir, node_quantity)
+                for node in nodes:
+                    node.mature()
+                    self.verify_and_sort(node, force=False)
+
+        # Finally, Pune
+        self.known_nodes.prune_nodes()
+
     def run(self,
             emitter: StdoutEmitter = None,
             discovery: bool = True,  # TODO: see below
             availability: bool = True,
             worker: bool = True,
-            pruning: bool = True,
+            datastore_pruning: bool = True,
+            node_pruning: bool = True,
             interactive: bool = False,
             hendrix: bool = True,
             start_reactor: bool = True,
@@ -1285,16 +1334,22 @@ class Ursula(Teacher, Character, Worker):
         if emitter:
             emitter.message(f"Starting services", color='yellow')
 
-        if pruning:
-            self.__pruning_task = self._datastore_pruning_task.start(interval=self._pruning_interval, now=True)
-            if emitter:
-                emitter.message(f"✓ Database Pruning", color='green')
-
-        # TODO: Startup node discovery here with the rest of Ursula's services.
+        # TODO: block until specific nodes are known here?
+        # TODO: Include learning startup here with the rest of the services
         # if discovery and not self.lonely:
         #     self.start_learning_loop(now=self._start_learning_now)
         #     if emitter:
         #         emitter.message(f"✓ Node Discovery - {self.domain}", color='green')
+
+        if datastore_pruning:
+            self._datastore_pruning_task.start(interval=self._datastore_pruning_interval, now=True)
+            if emitter:
+                emitter.message(f"✓ Database pruning ({self._datastore_pruning_interval}s)", color='green')
+
+        if node_pruning:
+            self._node_pruning_task.start(interval=self._node_pruning_interval, now=False)  # lazy
+            if emitter:
+                emitter.message(f"✓ Node pruning ({self._node_pruning_interval}s)", color='green')
 
         if self._availability_check and availability:
             self._availability_tracker.start(now=False)  # wait...
@@ -1318,7 +1373,7 @@ class Ursula(Teacher, Character, Worker):
             if emitter:
                 emitter.message(f"✓ Prometheus Exporter", color='green')
 
-        if interactive and emitter:
+        if interactive and emitter:  # TODO Deprecate?
             stdio.StandardIO(UrsulaCommandProtocol(ursula=self, emitter=emitter))
 
         if hendrix:

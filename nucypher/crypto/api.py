@@ -44,7 +44,7 @@ from nucypher.crypto.kits import UmbralMessageKit
 SYSTEM_RAND = SystemRandom()
 
 
-class InvalidNodeCertificate(RuntimeError):
+class MissingCertificatePseudonym(RuntimeError):
     """Raised when an Ursula's certificate is not valid because it is missing the checksum address."""
 
 
@@ -227,10 +227,10 @@ def read_certificate_pseudonym(certificate: Certificate):
     try:
         pseudonym = certificate.subject.get_attributes_for_oid(NameOID.PSEUDONYM)[0]
     except IndexError:
-        raise InvalidNodeCertificate("Invalid teacher certificate encountered: No checksum address present as pseudonym.")
+        raise MissingCertificatePseudonym("Invalid teacher certificate encountered: No checksum address present as pseudonym.")
     checksum_address = pseudonym.value
     if not is_checksum_address(checksum_address):
-        raise InvalidNodeCertificate("Invalid certificate checksum address encountered")
+        raise MissingCertificatePseudonym("Invalid certificate checksum address encountered")
     return checksum_address
 
 

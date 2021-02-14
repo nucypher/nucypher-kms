@@ -14,6 +14,7 @@
  You should have received a copy of the GNU Affero General Public License
  along with nucypher.  If not, see <https://www.gnu.org/licenses/>.
 """
+import pytest
 
 from nucypher.acumen.perception import FleetSensor
 from nucypher.config.storages import LocalFileBasedNodeStorage
@@ -50,12 +51,13 @@ def test_learner_learns_about_domains_separately(lonely_ursula_maker, caplog):
     new_first_domain_learner.learn_from_teacher_node()
 
     # This node, in the first domain, didn't learn about the second domain.
-    assert not set(second_domain_learners).intersection(new_first_domain_learner.known_nodes)
+    assert not set(second_domain_learners).intersection(new_first_domain_learner.known_nodes.get_nodes())
 
     # However, it learned about *all* of the nodes in its own domain.
-    assert hero_learner in new_first_domain_learner.known_nodes
-    assert other_first_domain_learner in new_first_domain_learner.known_nodes
-    assert _nobody in new_first_domain_learner.known_nodes
+    nodes = list(new_first_domain_learner.known_nodes.get_nodes())
+    assert hero_learner in nodes
+    assert other_first_domain_learner in nodes
+    assert _nobody in nodes
 
 
 def test_learner_restores_metadata_from_storage(lonely_ursula_maker, tmpdir):
@@ -86,12 +88,12 @@ def test_learner_restores_metadata_from_storage(lonely_ursula_maker, tmpdir):
 
     # The learner shouldn't learn about any node from the first domain, since it's different.
     learner.learn_from_teacher_node()
-    for restored_node in learner.known_nodes:
+    for restored_node in learner.known_nodes.get_nodes():
         assert restored_node.mature().domain == learner.domain
 
     # In fact, since the storage only contains nodes from a different domain,
     # the learner should only know its buddy from the second domain.
-    assert set(learner.known_nodes) == {buddy}
+    assert set(learner.known_nodes.get_nodes()) == {buddy}
 
 
 def test_learner_ignores_stored_nodes_from_other_domains(lonely_ursula_maker, tmpdir):
@@ -114,7 +116,8 @@ def test_learner_ignores_stored_nodes_from_other_domains(lonely_ursula_maker, tm
 
     # Once pest made its way into learner, learner taught passed it to other mainnet nodes.
 
-    learner.known_nodes._nodes[pest.checksum_address] = pest  # This used to happen anyway.
+    with pytest.raises(FleetSensor.WrongDomain):
+        learner.known_nodes.track(pest)  # This used to happen anyway.
     other_staker._current_teacher_node = learner
     other_staker.learn_from_teacher_node()  # And once it did, the node from the wrong domain spread.
     assert pest not in other_staker.known_nodes  # But not anymore.

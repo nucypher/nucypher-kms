@@ -35,7 +35,7 @@ from nucypher.acumen.nicknames import Nickname
 from nucypher.blockchain.eth.decorators import validate_checksum_address
 from nucypher.blockchain.eth.registry import BaseContractRegistry
 from nucypher.config.constants import DEFAULT_CONFIG_ROOT
-from nucypher.crypto.api import read_certificate_pseudonym, InvalidNodeCertificate
+from nucypher.crypto.api import read_certificate_pseudonym, MissingCertificatePseudonym
 from nucypher.utilities.logging import Logger
 
 
@@ -112,13 +112,13 @@ class NodeStorage(ABC):
         try:
             pseudonym = certificate.subject.get_attributes_for_oid(NameOID.PSEUDONYM)[0]
         except IndexError:
-            raise InvalidNodeCertificate(f"Missing checksum address on certificate for host '{host}'. "
+            raise MissingCertificatePseudonym(f"Missing checksum address on certificate for host '{host}'. "
                                          f"Does this certificate belong to an Ursula?")
         else:
             checksum_address = pseudonym.value
 
         if not is_checksum_address(checksum_address):
-            raise InvalidNodeCertificate("Invalid certificate wallet address encountered: {}".format(checksum_address))
+            raise MissingCertificatePseudonym("Invalid certificate wallet address encountered: {}".format(checksum_address))
 
         # Validate
         # TODO: It's better for us to have checked this a while ago so that this situation is impossible.  #443

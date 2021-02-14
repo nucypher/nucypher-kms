@@ -63,7 +63,7 @@ ${fleet_state_icon(state.checksum, state.nickname, state.population())}
                 <span class="node-icon">${"".join(character_span(character) for character in node.nickname.characters)}</span>
             </td>
             <td>
-                <a href="https://${node.rest_url()}/status">
+                <a href="https://${node.rest_interface}/status">
                 <span class="nickname">${ node.nickname }</span>
                 </a>
                 <br/>
@@ -198,26 +198,30 @@ ${fleet_state_icon(state.checksum, state.nickname, state.population())}
 
     <h3>${len(known_nodes)} ${"known node" if len(known_nodes) == 1 else "known nodes"}:</h3>
 
-    <table class="known-nodes">
-        <thead>
-            <td></td>
+    %for label in buckets:
+        <table class="known-nodes">
+            <thead>
+            <td>${str(label)} Bucket</td>
             <td>Launched</td>
             <td>Last Seen</td>
             <td>Fleet State</td>
-        </thead>
-        <tbody>
-        %for node in known_nodes:
-            <tr>
-                <td>${node_info(node)}</td>
-                <td>${ node.timestamp }</td>
-                <td>${ node.last_seen }</td>
-                <td>${fleet_state_icon(node.fleet_state_checksum,
-                                       node.fleet_state_nickname,
-                                       node.fleet_state_population)}</td>
-            </tr>
-        %endfor
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+                %for node in known_nodes.get_nodes(label=str(label)):
+                    <tr>
+                        <td>${node_info(node)}</td>
+                        <td>${ node.timestamp }</td>
+                        <td>${ node.last_seen }</td>
+                        <td>${fleet_state_icon(node.fleet_state_checksum,
+                        node.fleet_state_nickname,
+                        node.fleet_state_population)}</td>
+                    </tr>
+                %endfor
+
+            </tbody>
+        </table>
+    %endfor
+
 </body>
 </html>
 </%def>

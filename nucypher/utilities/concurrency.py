@@ -30,6 +30,7 @@ class Success:
         self.value = value
         self.result = result
 
+
 class Failure:
     def __init__(self, value, exception):
         self.value = value

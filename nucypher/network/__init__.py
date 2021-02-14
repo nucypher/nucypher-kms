@@ -14,4 +14,9 @@ GNU Affero General Public License for more details.
 You should have received a copy of the GNU Affero General Public License
 along with nucypher.  If not, see <https://www.gnu.org/licenses/>.
 """
+
+from constant_sorrow import constants
+
 LEARNING_LOOP_VERSION = 2  # TODO: Rename to DISCOVERY_LOOP_VERSION
+
+constants.NEVER_SEEN.bool_value(False)

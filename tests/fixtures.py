@@ -119,6 +119,12 @@ test_logger = Logger("test-logger")
 #
 
 
+@pytest.fixture(scope="session", autouse=True)
+def mock_reserved_ip(session_mocker):
+    session_mocker.patch('nucypher.network.nodes.RESERVED_IP_ADDRESSES', return_value=tuple())
+    yield
+
+
 @pytest.fixture(scope="function")
 def tempfile_path():
     fd, path = tempfile.mkstemp()
@@ -954,9 +960,9 @@ def fleet_of_highperf_mocked_ursulas(ursula_federated_test_config, request):
                 all_ursulas = {u.checksum_address: u for u in _ursulas}
 
                 for ursula in _ursulas:
-                    ursula.known_nodes._nodes = all_ursulas
+                    ursula.known_nodes._FleetSensor__nodes = all_ursulas
                     ursula.known_nodes.checksum = b"This is a fleet state checksum..".hex()
-    yield _ursulas
+    yield ursula.known_nodes
 
     for ursula in _ursulas:
         del MOCK_KNOWN_URSULAS_CACHE[ursula.rest_interface.port]
@@ -973,7 +979,7 @@ def highperf_mocked_alice(fleet_of_highperf_mocked_ursulas):
                                 reload_metadata=False)
 
     with mock_cert_storage, mock_verify_node, mock_record_fleet_state, mock_message_verification, mock_keep_learning:
-        alice = config.produce(known_nodes=list(fleet_of_highperf_mocked_ursulas)[:1])
+        alice = config.produce(known_nodes=list(fleet_of_highperf_mocked_ursulas.get_nodes())[:1])
     yield alice
     # TODO: Where does this really, truly belong?
     alice._learning_task.stop()
@@ -990,7 +996,7 @@ def highperf_mocked_bob(fleet_of_highperf_mocked_ursulas):
                               reload_metadata=False)
 
     with mock_cert_storage, mock_verify_node, mock_record_fleet_state, mock_keep_learning:
-        bob = config.produce(known_nodes=list(fleet_of_highperf_mocked_ursulas)[:1])
+        bob = config.produce(known_nodes=list(fleet_of_highperf_mocked_ursulas.get_nodes())[:1])
     yield bob
     bob._learning_task.stop()
     return bob

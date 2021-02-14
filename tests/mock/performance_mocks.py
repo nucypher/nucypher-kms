@@ -160,7 +160,7 @@ def do_not_create_cert(*args, **kwargs):
 
 def simple_remember(ursula, node, *args, **kwargs):
     address = node.checksum_address
-    ursula.known_nodes[address] = node
+    ursula.known_nodes.track(node)
 
 
 class NotARestApp:

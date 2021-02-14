@@ -22,7 +22,8 @@ import random
 import pytest
 
 from nucypher.blockchain.economics import BaseEconomics
-from nucypher.blockchain.eth.agents import StakingEscrowAgent, WeightedSampler
+from nucypher.blockchain.eth.agents import StakingEscrowAgent
+from utilities.sampler import WeightedSampler
 from nucypher.blockchain.eth.constants import NULL_ADDRESS, STAKING_ESCROW_CONTRACT_NAME
 
 

@@ -27,6 +27,7 @@ from nucypher.config.constants import TEMPORARY_DOMAIN
 from nucypher.crypto.powers import SigningPower
 from nucypher.datastore.models import TreasureMap
 from tests.utils.middleware import MockRestMiddleware
+from constant_sorrow.constants import INVALID
 
 
 def test_all_blockchain_ursulas_know_about_all_other_ursulas(blockchain_ursulas, agency):
@@ -109,7 +110,7 @@ def test_vladimir_illegal_interface_key_does_not_propagate(blockchain_ursulas):
 
     # ...but now, Ursula will now try to learn about Vladimir on a different thread.
     other_ursula.block_until_specific_nodes_are_known([vladimir.checksum_address])
-    vladimir_as_learned = other_ursula.known_nodes[vladimir.checksum_address]
+    vladimir_as_learned = other_ursula.known_nodes.get_node(vladimir.checksum_address)
 
     # OK, so cool, let's see what happens when Ursula tries to learn with Vlad as the teacher.
     other_ursula._current_teacher_node = vladimir_as_learned
@@ -119,7 +120,7 @@ def test_vladimir_illegal_interface_key_does_not_propagate(blockchain_ursulas):
     vladimir in other_ursula.suspicious_activities_witnessed['vladimirs']
 
     # She marked him as Invalid...
-    vladimir in other_ursula.known_nodes._marked[vladimir.InvalidNode]
+    vladimir in other_ursula.known_nodes.get_nodes(label=INVALID)
 
     # ...and booted him from known_nodes
     vladimir not in other_ursula.known_nodes
@@ -143,7 +144,7 @@ def test_alice_refuses_to_make_arrangement_unless_ursula_is_valid(blockchain_ali
     # Ideally, a fishy node shouldn't be present in `known_nodes`,
     # but I guess we're testing the case when it became fishy somewhere between we learned about it
     # and the proposal arrangement.
-    blockchain_alice.known_nodes[vladimir.checksum_address] = vladimir
+    blockchain_alice.known_nodes.track(vladimir)
 
     with pytest.raises(vladimir.InvalidNode):
         idle_blockchain_policy._propose_arrangement(address=vladimir.checksum_address,

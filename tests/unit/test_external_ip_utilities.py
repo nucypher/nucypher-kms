@@ -90,23 +90,25 @@ def test_get_external_ip_from_empty_known_nodes(mock_requests, mock_network):
     mock_requests.assert_not_called()
 
 
-def test_get_external_ip_from_known_nodes_with_one_known_node(mock_requests, mock_network):
+def test_get_external_ip_from_known_nodes_with_one_known_node(mocker, mock_requests, mock_network):
     sensor = FleetSensor(domain=mock_network)
-    sensor._nodes['0xdeadbeef'] = Dummy()
+    mocker.patch.dict(sensor._FleetSensor__nodes, {'0xdeadbeef': Dummy()})
     assert len(sensor) == 1
     get_external_ip_from_known_nodes(known_nodes=sensor)
     # skipped because there are too few known nodes
     mock_requests.assert_not_called()
 
 
-def test_get_external_ip_from_known_nodes(mock_client, mock_network):
+def test_get_external_ip_from_known_nodes(mocker, mock_client, mock_network):
 
     # Setup FleetSensor
     sensor = FleetSensor(domain=mock_network)
     sample_size = 3
-    sensor._nodes['0xdeadbeef'] = Dummy()
-    sensor._nodes['0xdeadllama'] = Dummy()
-    sensor._nodes['0xdeadmouse'] = Dummy()
+    nodes = {'0xdeadbeef': Dummy(),
+             '0xdeadllama': Dummy(),
+             '0xdeadmouse': Dummy()}
+
+    mocker.patch.dict(sensor._FleetSensor__nodes, nodes)
     assert len(sensor) == sample_size
 
     # First sampled node replies
@@ -125,9 +127,10 @@ def test_get_external_ip_from_known_nodes_client(mocker, mock_client, mock_netwo
     # Setup FleetSensor
     sensor = FleetSensor(domain=mock_network)
     sample_size = 3
-    sensor._nodes['0xdeadbeef'] = Dummy()
-    sensor._nodes['0xdeadllama'] = Dummy()
-    sensor._nodes['0xdeadmouse'] = Dummy()
+    nodes = {'0xdeadbeef': Dummy(),
+             '0xdeadllama': Dummy(),
+             '0xdeadmouse': Dummy()}
+    mocker.patch.dict(sensor._FleetSensor__nodes, nodes)
     assert len(sensor) == sample_size
 
     # Setup HTTP Client
@@ -187,7 +190,7 @@ def test_get_external_ip_cascade_failure(mocker, mock_network, mock_requests):
     third = mocker.patch('nucypher.utilities.networking.get_external_ip_from_centralized_source', return_value=None)
 
     sensor = FleetSensor(domain=mock_network)
-    sensor._nodes['0xdeadbeef'] = Dummy()
+    mocker.patch.dict(sensor._FleetSensor__nodes, {'0xdeadbeef': Dummy()})
 
     with pytest.raises(UnknownIPAddress, match='External IP address detection failed'):
         determine_external_ip_address(network=mock_network, known_nodes=sensor)
