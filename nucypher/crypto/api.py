@@ -18,7 +18,6 @@ from random import SystemRandom
 
 import datetime
 import sha3
-from constant_sorrow import constants
 from cryptography import x509
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.backends import default_backend
@@ -38,7 +37,7 @@ from umbral import pre
 from umbral.keys import UmbralPrivateKey, UmbralPublicKey
 from umbral.signing import Signature
 
-from nucypher.crypto.constants import SHA256
+from nucypher.crypto import constants
 from nucypher.crypto.kits import UmbralMessageKit
 
 SYSTEM_RAND = SystemRandom()
@@ -125,7 +124,7 @@ def ecdsa_sign(message: bytes,
     :return: signature
     """
     signing_key = private_key.to_cryptography_privkey()
-    signature_der_bytes = signing_key.sign(message, ec.ECDSA(SHA256))
+    signature_der_bytes = signing_key.sign(message, ec.ECDSA(constants.SHA256))
     return signature_der_bytes
 
 
@@ -168,7 +167,7 @@ def verify_ecdsa(message: bytes,
         cryptography_pub_key.verify(
             signature,
             message,
-            ec.ECDSA(SHA256)
+            ec.ECDSA(constants.SHA256)
         )
     except InvalidSignature:
         return False

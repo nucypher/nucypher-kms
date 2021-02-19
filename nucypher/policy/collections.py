@@ -25,7 +25,6 @@ from bytestring_splitter import (
     VariableLengthBytestring
 )
 from constant_sorrow.constants import CFRAG_NOT_RETAINED, NO_DECRYPTION_PERFORMED
-from constant_sorrow.constants import NOT_SIGNED
 from cryptography.hazmat.backends.openssl import backend
 from cryptography.hazmat.primitives import hashes
 from eth_utils import to_canonical_address, to_checksum_address
@@ -39,7 +38,7 @@ from nucypher.blockchain.eth.constants import ETH_ADDRESS_BYTE_LENGTH, ETH_HASH_
 from nucypher.characters.lawful import Bob, Character
 from nucypher.crypto.api import encrypt_and_sign, keccak_digest
 from nucypher.crypto.api import verify_eip_191
-from nucypher.crypto.constants import HRAC_LENGTH
+from nucypher.crypto.constants import HRAC_LENGTH, NOT_SIGNED
 from nucypher.crypto.kits import UmbralMessageKit
 from nucypher.crypto.signing import InvalidSignature, Signature, signature_splitter, SignatureStamp
 from nucypher.crypto.splitters import capsule_splitter, key_splitter

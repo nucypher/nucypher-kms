@@ -17,9 +17,9 @@ along with nucypher.  If not, see <https://www.gnu.org/licenses/>.
 
 
 import pytest
-from constant_sorrow import constants
 from cryptography.exceptions import InvalidSignature
 
+from nucypher.crypto import constants
 from nucypher.characters.lawful import Enrico
 
 """

@@ -18,9 +18,10 @@ along with nucypher.  If not, see <https://www.gnu.org/licenses/>.
 from typing import Optional
 
 from bytestring_splitter import BytestringKwargifier, VariableLengthBytestring
-from constant_sorrow.constants import NOT_SIGNED, UNKNOWN_SENDER
+from constant_sorrow.constants import UNKNOWN_SENDER
 from umbral.keys import UmbralPublicKey
 
+from nucypher.crypto.constants import NOT_SIGNED
 from nucypher.crypto.splitters import capsule_splitter, key_splitter
 
 

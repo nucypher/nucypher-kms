@@ -14,9 +14,7 @@ GNU Affero General Public License for more details.
 You should have received a copy of the GNU Affero General Public License
 along with nucypher.  If not, see <https://www.gnu.org/licenses/>.
 """
-from constant_sorrow import constants
-
-from nucypher.blockchain.eth.agents import ContractAgency, PolicyManagerAgent, StakingEscrowAgent
+from nucypher.blockchain.eth.agents import ContractAgency, PolicyManagerAgent
 from nucypher.blockchain.eth.constants import POLICY_MANAGER_CONTRACT_NAME
 from nucypher.blockchain.eth.deployers import (DispatcherDeployer, PolicyManagerDeployer)
 

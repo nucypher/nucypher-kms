@@ -79,7 +79,7 @@ from nucypher.cli.processes import UrsulaCommandProtocol
 from nucypher.config.constants import END_OF_POLICIES_PROBATIONARY_PERIOD
 from nucypher.config.storages import ForgetfulNodeStorage, NodeStorage
 from nucypher.crypto.api import encrypt_and_sign, keccak_digest
-from nucypher.crypto.constants import HRAC_LENGTH, PUBLIC_KEY_LENGTH
+from nucypher.crypto.constants import HRAC_LENGTH, PUBLIC_KEY_LENGTH, NOT_SIGNED
 from nucypher.crypto.keypairs import HostingKeypair
 from nucypher.crypto.kits import UmbralMessageKit
 from nucypher.crypto.powers import (
@@ -1069,7 +1069,7 @@ class Ursula(Teacher, Character, Worker):
                  prune_datastore: bool = True,
 
                  # Blockchain
-                 decentralized_identity_evidence: bytes = constants.NOT_SIGNED,
+                 decentralized_identity_evidence: bytes = NOT_SIGNED,
                  checksum_address: str = None,
                  worker_address: str = None,  # TODO: deprecate, and rename to "checksum_address"
                  block_until_ready: bool = True,

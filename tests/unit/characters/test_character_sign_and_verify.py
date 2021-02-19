@@ -18,12 +18,13 @@ along with nucypher.  If not, see <https://www.gnu.org/licenses/>.
 
 import pytest
 from constant_sorrow import constants
+
 from cryptography.exceptions import InvalidSignature
 
 from nucypher.characters.lawful import Alice, Bob, Character
 from nucypher.crypto import api
 from nucypher.crypto.powers import (CryptoPower, NoSigningPower, SigningPower)
-
+from nucypher.crypto.constants import NOT_SIGNED
 """
 Chapter 1: SIGNING
 """
@@ -125,5 +126,5 @@ def test_anybody_can_encrypt():
 
     ciphertext, signature = someone.encrypt_for(bob, cleartext, sign=False)
 
-    assert signature == constants.NOT_SIGNED
+    assert signature == NOT_SIGNED
     assert ciphertext is not None
