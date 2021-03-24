@@ -35,9 +35,7 @@ from eth_utils import is_checksum_address, to_checksum_address
 from ipaddress import IPv4Address
 from random import SystemRandom
 from typing import Tuple
-from umbral import pre
-from umbral.keys import UmbralPrivateKey, UmbralPublicKey
-from umbral.signing import Signature
+from nucypher.crypto.umbral_adapter import UmbralPrivateKey, UmbralPublicKey, Signature, pre
 
 from nucypher.crypto.constants import SHA256
 from nucypher.crypto.kits import UmbralMessageKit

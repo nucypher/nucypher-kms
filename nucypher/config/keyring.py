@@ -33,20 +33,17 @@ from cryptography.hazmat.backends.openssl.ec import _EllipticCurvePrivateKey
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurve
-from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from cryptography.hazmat.primitives.serialization import Encoding, load_pem_private_key
 from cryptography.x509 import Certificate
 from eth_account import Account
 from eth_keys import KeyAPI as EthKeyAPI
 from eth_utils import to_checksum_address
-from nacl.exceptions import CryptoError
-from nacl.secret import SecretBox
-from umbral.keys import UmbralKeyingMaterial, UmbralPrivateKey, UmbralPublicKey, derive_key_from_password
+from nucypher.crypto.umbral_adapter import UmbralKeyingMaterial, UmbralPrivateKey, UmbralPublicKey, derive_key_from_password, AuthenticationFailed
 
 from nucypher.config.constants import DEFAULT_CONFIG_ROOT
 from nucypher.crypto.api import generate_teacher_certificate, _TLS_CURVE
-from nucypher.crypto.constants import BLAKE2B
 from nucypher.crypto.keypairs import HostingKeypair
+from nucypher.crypto.passwords import derive_wrapping_key_from_key_material, SecretBox
 from nucypher.crypto.powers import (DecryptingPower, DerivedKeyBasedPower, KeyPairBasedPower, SigningPower)
 from nucypher.network.server import TLSHostingPower
 from nucypher.utilities.logging import Logger

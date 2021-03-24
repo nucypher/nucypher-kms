@@ -20,7 +20,7 @@ from cryptography.exceptions import InternalError
 from decimal import Decimal, DecimalException
 from eth_utils import to_checksum_address
 from ipaddress import ip_address
-from umbral.keys import UmbralPublicKey
+from nucypher.crypto.umbral_adapter import UmbralPublicKey
 
 from nucypher.blockchain.economics import StandardTokenEconomics
 from nucypher.blockchain.eth.interfaces import BlockchainInterface

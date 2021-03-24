@@ -18,7 +18,7 @@ along with nucypher.  If not, see <https://www.gnu.org/licenses/>.
 import datetime
 import maya
 import pytest
-from umbral.kfrags import KFrag
+from nucypher.crypto.umbral_adapter import KFrag
 
 from nucypher.characters.lawful import Enrico
 from nucypher.crypto.api import keccak_digest

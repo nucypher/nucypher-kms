@@ -19,8 +19,7 @@ import os
 import pytest
 from bytestring_splitter import VariableLengthBytestring
 from eth_utils import to_canonical_address
-from umbral.keys import UmbralPrivateKey
-from umbral.signing import Signer
+from nucypher.crypto.umbral_adapter import UmbralPrivateKey, Signer
 
 from nucypher.blockchain.eth.constants import ETH_HASH_BYTE_LENGTH, LENGTH_ECDSA_SIGNATURE_WITH_RECOVERY
 from nucypher.crypto.signing import SignatureStamp, InvalidSignature

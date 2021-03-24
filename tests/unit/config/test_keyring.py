@@ -19,7 +19,7 @@ from pathlib import Path
 
 import pytest
 from constant_sorrow.constants import FEDERATED_ADDRESS
-from cryptography.hazmat.primitives.serialization.base import Encoding
+from cryptography.hazmat.primitives.serialization import Encoding
 
 from nucypher.config.keyring import (
     _assemble_key_data,

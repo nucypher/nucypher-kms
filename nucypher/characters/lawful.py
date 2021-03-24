@@ -56,10 +56,7 @@ from twisted.internet.defer import Deferred
 from twisted.internet.task import LoopingCall
 from twisted.logger import Logger
 from typing import Dict, Iterable, List, NamedTuple, Tuple, Union, Optional, Sequence, Set, Any
-from umbral import pre
-from umbral.keys import UmbralPublicKey
-from umbral.kfrags import KFrag
-from umbral.signing import Signature
+from nucypher.crypto.umbral_adapter import UmbralPublicKey, KFrag, Signature, pre
 
 import nucypher
 from nucypher.acumen.nicknames import Nickname

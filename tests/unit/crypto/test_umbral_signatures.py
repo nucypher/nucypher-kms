@@ -17,7 +17,7 @@ along with nucypher.  If not, see <https://www.gnu.org/licenses/>.
 import pytest
 from cryptography.hazmat.backends.openssl import backend
 from cryptography.hazmat.primitives import hashes
-from umbral.keys import UmbralPrivateKey
+from nucypher.crypto.umbral_adapter import UmbralPrivateKey
 
 from nucypher.crypto.api import ecdsa_sign, verify_ecdsa
 from nucypher.crypto.signing import Signature, Signer

@@ -17,7 +17,7 @@ along with nucypher.  If not, see <https://www.gnu.org/licenses/>.
 
 
 import click
-from umbral.keys import UmbralPublicKey
+from nucypher.crypto.umbral_adapter import UmbralPublicKey
 
 from nucypher.characters.control.interfaces import EnricoInterface
 from nucypher.characters.lawful import Enrico

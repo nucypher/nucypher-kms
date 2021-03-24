@@ -18,9 +18,7 @@ along with nucypher.  If not, see <https://www.gnu.org/licenses/>.
 import pytest
 import pytest_twisted
 from twisted.internet import threads
-from umbral import pre
-from umbral.cfrags import CapsuleFrag
-from umbral.kfrags import KFrag
+from nucypher.crypto.umbral_adapter import pre, CapsuleFrag, KFrag
 
 from nucypher.crypto.kits import PolicyMessageKit
 from nucypher.crypto.powers import DecryptingPower

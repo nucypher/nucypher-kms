@@ -34,8 +34,7 @@ from twisted._threads import AlreadyQuit
 from twisted.internet import reactor
 from twisted.internet.defer import ensureDeferred, Deferred
 from twisted.python.threadpool import ThreadPool
-from umbral.keys import UmbralPublicKey
-from umbral.kfrags import KFrag
+from nucypher.crypto.umbral_adapter import UmbralPublicKey, KFrag
 
 from nucypher.blockchain.eth.actors import BlockchainPolicyAuthor
 from nucypher.blockchain.eth.agents import PolicyManagerAgent, StakersReservoir, StakingEscrowAgent

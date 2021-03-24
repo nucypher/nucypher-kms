@@ -34,8 +34,7 @@ from cryptography.exceptions import InvalidSignature
 from eth_keys import KeyAPI as EthKeyAPI
 from eth_utils import to_canonical_address, to_checksum_address
 from typing import ClassVar, Dict, List, Optional, Union
-from umbral.keys import UmbralPublicKey
-from umbral.signing import Signature
+from nucypher.crypto.umbral_adapter import UmbralPublicKey, Signature
 
 from nucypher.acumen.nicknames import Nickname
 from nucypher.blockchain.eth.interfaces import BlockchainInterfaceFactory
@@ -507,9 +506,7 @@ class Character(Learner):
     def derive_federated_address(self):
         if self.federated_only:
             verifying_key = self.public_keys(SigningPower)
-            uncompressed_bytes = verifying_key.to_bytes(is_compressed=False)
-            without_prefix = uncompressed_bytes[1:]
-            verifying_key_as_eth_key = EthKeyAPI.PublicKey(without_prefix)
+            verifying_key_as_eth_key = EthKeyAPI.PublicKey.from_compressed_bytes(bytes(verifying_key))
             federated_address = verifying_key_as_eth_key.to_checksum_address()
         else:
             raise RuntimeError('Federated address can only be derived for federated characters.')

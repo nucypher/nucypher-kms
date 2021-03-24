@@ -16,7 +16,7 @@ along with nucypher.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 import pytest
-from umbral.keys import UmbralPrivateKey
+from nucypher.crypto.umbral_adapter import UmbralPrivateKey
 
 from nucypher.crypto.signing import SignatureStamp
 from nucypher.crypto.utils import get_coordinates_as_bytes

@@ -24,8 +24,7 @@ from eth_account.account import Account
 from eth_account.messages import HexBytes, SignableMessage, encode_defunct
 from eth_tester.exceptions import TransactionFailed
 from eth_utils import to_canonical_address, to_checksum_address, to_normalized_address
-from umbral.keys import UmbralPrivateKey
-from umbral.signing import Signer
+from nucypher.crypto.umbral_adapter import UmbralPrivateKey, Signer
 
 from nucypher.crypto.api import keccak_digest, verify_eip_191
 from nucypher.crypto.utils import canonical_address_from_umbral_key, get_signature_recovery_value

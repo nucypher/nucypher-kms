@@ -30,10 +30,7 @@ from cryptography.hazmat.backends.openssl import backend
 from cryptography.hazmat.primitives import hashes
 from eth_utils import to_canonical_address, to_checksum_address
 from typing import Optional, Tuple
-from umbral.config import default_params
-from umbral.curvebn import CurveBN
-from umbral.keys import UmbralPublicKey
-from umbral.pre import Capsule
+from nucypher.crypto.umbral_adapter import UmbralPublicKey, Capsule, CurveBN
 
 from nucypher.blockchain.eth.constants import ETH_ADDRESS_BYTE_LENGTH, ETH_HASH_BYTE_LENGTH
 from nucypher.characters.lawful import Bob, Character

@@ -17,7 +17,7 @@
 
 import json
 import os
-from umbral.keys import UmbralPrivateKey, UmbralPublicKey
+from nucypher.crypto.umbral_adapter import UmbralPrivateKey, UmbralPublicKey
 
 DOCTOR_PUBLIC_JSON = 'doctor.public.json'
 DOCTOR_PRIVATE_JSON = 'doctor.private.json'

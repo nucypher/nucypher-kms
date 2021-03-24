@@ -18,7 +18,7 @@ import base64
 
 import sha3
 from constant_sorrow.constants import PUBLIC_ONLY
-from umbral.keys import UmbralPrivateKey
+from nucypher.crypto.umbral_adapter import UmbralPrivateKey
 
 from nucypher.crypto import keypairs
 

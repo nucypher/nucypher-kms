@@ -28,8 +28,7 @@ import re
 import tabulate
 import time
 from twisted.logger import ILogObserver, globalLogPublisher, jsonFileLogObserver
-from umbral.keys import UmbralPrivateKey
-from umbral.signing import Signer
+from nucypher.crypto.umbral_adapter import UmbralPrivateKey, Signer
 from unittest.mock import Mock
 from zope.interface import provider
 

@@ -57,7 +57,7 @@ from nucypher.network.middleware import RestMiddleware
 from nucypher.network.protocols import SuspiciousActivity
 from nucypher.network.server import TLSHostingPower
 from nucypher.utilities.logging import Logger
-from umbral.signing import Signature
+from nucypher.crypto.umbral_adapter import Signature
 
 
 class NodeSprout(PartiallyKwargifiedBytes):

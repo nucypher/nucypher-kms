@@ -20,8 +20,7 @@ import inspect
 from eth_typing.evm import ChecksumAddress
 from hexbytes import HexBytes
 from typing import List, Optional, Tuple
-from umbral import pre
-from umbral.keys import UmbralKeyingMaterial, UmbralPrivateKey, UmbralPublicKey
+from nucypher.crypto.umbral_adapter import pre, UmbralKeyingMaterial, UmbralPrivateKey, UmbralPublicKey
 
 from nucypher.blockchain.eth.decorators import validate_checksum_address
 from nucypher.blockchain.eth.signers.base import Signer

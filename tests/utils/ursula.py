@@ -20,10 +20,7 @@ import contextlib
 import socket
 from cryptography.x509 import Certificate
 from typing import Iterable, List, Optional, Set
-from umbral import pre
-from umbral.curvebn import CurveBN
-from umbral.keys import UmbralPrivateKey
-from umbral.signing import Signer
+from nucypher.crypto.umbral_adapter import pre, CurveBN, UmbralPrivateKey, Signer
 
 from nucypher.blockchain.eth.actors import Staker
 from nucypher.blockchain.eth.interfaces import BlockchainInterface

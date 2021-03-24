@@ -33,7 +33,7 @@ import shutil
 import time
 from eth_typing.evm import ChecksumAddress
 from typing import Set, Optional, List, Tuple
-from umbral.keys import UmbralPrivateKey
+from nucypher.crypto.umbral_adapter import UmbralPrivateKey
 from web3.main import Web3
 from web3.types import Wei
 
