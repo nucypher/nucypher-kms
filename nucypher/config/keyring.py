@@ -64,11 +64,6 @@ __PRIVATE_MODE = stat.S_IRUSR | stat.S_IWUSR              # 0o600
 __PUBLIC_FLAGS = os.O_WRONLY | os.O_CREAT | os.O_EXCL     # Write, Create, Non-Existing
 __PUBLIC_MODE = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH  # 0o644
 
-# Keyring
-__WRAPPING_KEY_LENGTH = 32
-__WRAPPING_KEY_INFO = b'NuCypher-KeyWrap'
-__HKDF_HASH_ALGORITHM = BLAKE2B
-
 PrivateKeyData = Union[
     Dict[str, bytes],
     bytes,
@@ -205,26 +200,6 @@ def _read_tls_public_certificate(filepath: str) -> Certificate:
             return cert
     except FileNotFoundError:
         raise FileNotFoundError("No SSL certificate found at {}".format(filepath))
-
-
-#
-# Key wrapping
-#
-def _derive_wrapping_key_from_key_material(salt: bytes,
-                                           key_material: bytes,
-                                           ) -> bytes:
-    """
-    Uses HKDF to derive a 32 byte wrapping key to encrypt key material with.
-    """
-
-    wrapping_key = HKDF(
-        algorithm=__HKDF_HASH_ALGORITHM,
-        length=__WRAPPING_KEY_LENGTH,
-        salt=salt,
-        info=__WRAPPING_KEY_INFO,
-        backend=default_backend()
-    ).derive(key_material)
-    return wrapping_key
 
 
 #
