@@ -22,6 +22,8 @@ from nucypher.crypto.signing import SignatureStamp
 from nucypher.crypto.utils import get_coordinates_as_bytes
 
 
+# TODO: IndisputableEvidence is moving to Umbral
+@pytest.mark.skip("Only used in IndisputableEvidence")
 def test_coordinates_as_bytes():
     pubkey = UmbralPrivateKey.gen_key().pubkey
     point = pubkey.point_key

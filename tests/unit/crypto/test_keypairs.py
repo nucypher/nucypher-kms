@@ -40,7 +40,7 @@ def test_keypair_with_umbral_keys():
     umbral_pubkey = umbral_privkey.get_pubkey()
 
     new_keypair_from_priv = keypairs.Keypair(umbral_privkey)
-    assert new_keypair_from_priv._privkey.bn_key.to_bytes() == umbral_privkey.bn_key.to_bytes()
+    assert new_keypair_from_priv._privkey == umbral_privkey
     assert new_keypair_from_priv.pubkey.to_bytes() == umbral_pubkey.to_bytes()
 
     new_keypair_from_pub = keypairs.Keypair(public_key=umbral_pubkey)
@@ -54,9 +54,6 @@ def test_keypair_serialization():
 
     pubkey_bytes = new_keypair.serialize_pubkey()
     assert pubkey_bytes == bytes(umbral_pubkey)
-
-    pubkey_b64 = new_keypair.serialize_pubkey(as_b64=True)
-    assert pubkey_b64 == base64.urlsafe_b64encode(umbral_pubkey.to_bytes())
 
 
 def test_keypair_fingerprint():

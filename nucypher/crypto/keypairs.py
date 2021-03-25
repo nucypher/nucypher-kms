@@ -65,16 +65,14 @@ class Keypair(object):
             raise ValueError(
                 "Either pass a valid key or, if you want to generate keys, set generate_keys_if_needed to True.")
 
-    def serialize_pubkey(self, as_b64=False) -> bytes:
+    def serialize_pubkey(self) -> bytes:
         """
         Serializes the pubkey for storage/transport in either urlsafe base64
         or as a bytestring.
 
-        :param as_b64: Return the pubkey as urlsafe base64 byte string
         :return: The serialized pubkey in bytes
         """
-        encoder = base64.urlsafe_b64encode if as_b64 else None
-        return self.pubkey.to_bytes(encoder=encoder)
+        return self.pubkey.to_bytes()
 
     def fingerprint(self):
         """

@@ -41,7 +41,8 @@ def construct_policy_id(label: bytes, stamp: bytes) -> bytes:
 
 
 def canonical_address_from_umbral_key(public_key: UmbralPublicKey) -> bytes:
-    pubkey_raw_bytes = public_key.to_bytes()
+    # TODO: seems `public_key` like is actually a `SignatureStamp` now.
+    pubkey_raw_bytes = bytes(public_key)
     eth_pubkey = EthKeyAPI.PublicKey.from_compressed_bytes(pubkey_raw_bytes)
     canonical_address = eth_pubkey.to_canonical_address()
     return canonical_address
@@ -63,7 +64,6 @@ def recover_pubkey_from_signature(message: bytes,
     :param is_prehashed: True if the message is already pre-hashed. Default is False, and message will be hashed with SHA256
     :return: The compressed byte-serialized representation of the recovered public key
     """
-
     signature = bytes(signature)
     expected_signature_size = Signature.expected_bytes_length()
     if not len(signature) == expected_signature_size:

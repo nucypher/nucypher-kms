@@ -243,7 +243,7 @@ def encrypt_and_sign(recipient_pubkey_enc: UmbralPublicKey,
             # Sign first, encrypt second.
             sig_header = constants.SIGNATURE_TO_FOLLOW
             signature = signer(plaintext)
-            ciphertext, capsule = pre.encrypt(recipient_pubkey_enc, sig_header + signature + plaintext)
+            ciphertext, capsule = pre.encrypt(recipient_pubkey_enc, sig_header + bytes(signature) + plaintext)
         else:
             # Encrypt first, sign second.
             sig_header = constants.SIGNATURE_IS_ON_CIPHERTEXT
