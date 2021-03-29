@@ -299,7 +299,10 @@ class TrezorSigner(Signer):
         # https://github.com/trezor/trezor-firmware/issues/1050#issuecomment-640718622
         hd_path = self.__get_address_path(checksum_address=sender_address)  # from cache
 
-        # Trezor signing request
+        # Handle contract creation transaction formatting.
+        if trezor_transaction['to'] == b'':
+            trezor_transaction['to'] = ''
+
         _v, _r, _s = self.__sign_transaction(n=hd_path, trezor_transaction=trezor_transaction)
 
         # Create RLP serializable Transaction instance with eth_account
@@ -307,8 +310,9 @@ class TrezorSigner(Signer):
         transaction_dict = dissoc(transaction_dict, 'chainId')
 
         # 'to' may be blank if this transaction is contract creation
-        formatters = {'to': to_canonical_address}
-        transaction_dict = dict(apply_formatters_to_dict(formatters, transaction_dict))
+        if transaction_dict['to']:
+            formatters = {'to': to_canonical_address}
+            transaction_dict = dict(apply_formatters_to_dict(formatters, transaction_dict))
 
         signed_transaction = Transaction(v=to_int(_v),  # type: int
                                          r=to_int(_r),  # bytes -> int

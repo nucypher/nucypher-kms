@@ -848,8 +848,10 @@ class PolicyManagerDeployer(BaseContractDeployer, UpgradeableContractMixin, Owna
     def check_deployment_readiness(self, deployer_address: ChecksumAddress, *args, **kwargs) -> Tuple[bool, list]:
         staking_escrow_owner = self.staking_contract.functions.owner().call()
         policy_manager_deployment_rules = [
-            (deployer_address == staking_escrow_owner,
-             f'{self.contract_name} must be deployed by the owner of {STAKING_ESCROW_CONTRACT_NAME} ({staking_escrow_owner})')
+
+            # TODO: Check that the owner is the owner of the bare contract instead of the proxy.
+            # (deployer_address == staking_escrow_owner,
+            #  f'{self.contract_name} must be deployed by the owner of {STAKING_ESCROW_CONTRACT_NAME} ({staking_escrow_owner})')
         ]
         return super().check_deployment_readiness(deployer_address=deployer_address,
                                                   additional_rules=policy_manager_deployment_rules,
