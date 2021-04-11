@@ -8,7 +8,6 @@ python_version = "3"
 
 [packages]
 # NuCypher
-umbral = "==0.1.3a2"
 constant-sorrow = ">=0.1.0a9"
 bytestring-splitter = ">=1.3.0"
 hendrix = ">=3.4"
@@ -33,6 +32,7 @@ py-evm = "*"
 eth-tester = "*"
 coincurve = "*"
 web3 = "<=5.12.3"
+eth-utils = "<1.10"
 py-geth = "*"
 # CLI / Configuration
 appdirs = "*"
@@ -42,6 +42,7 @@ tabulate = "*"
 # Felix
 flask_sqlalchemy = "*"
 sqlalchemy = "*"
+umbral = {ref = "interfacing", git = "https://github.com/fjarri/pyumbral"}
 
 [dev-packages]
 # Pytest

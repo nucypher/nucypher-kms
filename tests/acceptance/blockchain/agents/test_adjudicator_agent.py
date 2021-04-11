@@ -16,8 +16,7 @@ along with nucypher.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 
-from umbral.keys import UmbralPrivateKey
-from umbral.signing import Signer
+from nucypher.crypto.umbral_adapter import UmbralPrivateKey, Signer
 
 from nucypher.config.constants import TEMPORARY_DOMAIN
 from nucypher.blockchain.eth.actors import NucypherTokenActor, Staker

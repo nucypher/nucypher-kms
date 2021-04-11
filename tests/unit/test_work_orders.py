@@ -19,8 +19,7 @@ import os
 import pytest
 from bytestring_splitter import VariableLengthBytestring
 from eth_utils import to_canonical_address
-from umbral.keys import UmbralPrivateKey
-from umbral.signing import Signer
+from nucypher.crypto.umbral_adapter import UmbralPrivateKey, Signer
 
 from nucypher.blockchain.eth.constants import ETH_HASH_BYTE_LENGTH, LENGTH_ECDSA_SIGNATURE_WITH_RECOVERY
 from nucypher.crypto.signing import SignatureStamp, InvalidSignature
@@ -62,7 +61,7 @@ def test_pre_task(mock_ursula_reencrypts, ursula, get_random_checksum_address):
 
     # Attaching cfrags to the task
     cfrag = evidence.task.cfrag
-    cfrag_bytes = bytes(VariableLengthBytestring(cfrag.to_bytes()))
+    cfrag_bytes = bytes(cfrag.to_bytes())
     cfrag_signature = ursula.stamp(cfrag_bytes)
 
     task.attach_work_result(cfrag, cfrag_signature)
@@ -168,11 +167,6 @@ def test_work_order_with_multiple_capsules(mock_ursula_reencrypts,
                                         alice_address=alice_address)
 
     # Testing WorkOrder.complete()
-
-    # Trying to complete this work order fails because the current task signatures are different from the ones created
-    # when the re-encryption fixture ran. This is an expected effect of using that fixture, which makes the test simpler
-    with pytest.raises(InvalidSignature, match="Invalid metadata"):
-        work_order.complete(list(zip(cfrags, cfrag_signatures)))
 
     # Let's use the original task signatures in our WorkOrder, instead
     for capsule, task_signature in zip(capsules, signatures):

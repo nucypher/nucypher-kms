@@ -56,10 +56,7 @@ from twisted.internet.defer import Deferred
 from twisted.internet.task import LoopingCall
 from twisted.logger import Logger
 from typing import Dict, Iterable, List, NamedTuple, Tuple, Union, Optional, Sequence, Set, Any
-from umbral import pre
-from umbral.keys import UmbralPublicKey
-from umbral.kfrags import KFrag
-from umbral.signing import Signature
+from nucypher.crypto.umbral_adapter import UmbralPublicKey, KFrag, Signature, pre
 
 import nucypher
 from nucypher.acumen.nicknames import Nickname
@@ -795,7 +792,7 @@ class Bob(Character):
 
         the_airing_of_grievances = []
         for capsule, pre_task in work_order.tasks.items():
-            if not pre_task.cfrag.verify_correctness(capsule):
+            if not pre_task.cfrag.verify_correctness(capsule, metadata=bytes(pre_task.signature)):
                 # TODO: WARNING - This block is untested.
                 from nucypher.policy.collections import IndisputableEvidence
                 evidence = IndisputableEvidence(task=pre_task, work_order=work_order)
@@ -1718,18 +1715,19 @@ class Ursula(Teacher, Character, Worker):
         for capsule, task in work_order.tasks.items():
             # Ursula signs on top of Bob's signature of each task.
             # Now both are committed to the same task.  See #259.
-            reencryption_metadata = bytes(self.stamp(bytes(task.signature)))
+            metadata = bytes(task.signature)
+            metadata_signature = bytes(self.stamp(metadata))
 
             # Ursula sets Alice's verifying key for capsule correctness verification.
             capsule.set_correctness_keys(verifying=alice_verifying_key)
 
             # Then re-encrypts the fragment.
-            cfrag = pre.reencrypt(kfrag, capsule, metadata=reencryption_metadata)  # <--- pyUmbral
+            cfrag = pre.reencrypt(kfrag, capsule, metadata=metadata)  # <--- pyUmbral
             self.log.info(f"Re-encrypted capsule {capsule} -> made {cfrag}.")
 
             # Next, Ursula signs to commit to her results.
             reencryption_signature = self.stamp(bytes(cfrag))
-            cfrag_byte_stream += VariableLengthBytestring(cfrag) + reencryption_signature
+            cfrag_byte_stream += bytes(cfrag) + reencryption_signature
 
         # ... and finally returns all the re-encrypted bytes
         return cfrag_byte_stream

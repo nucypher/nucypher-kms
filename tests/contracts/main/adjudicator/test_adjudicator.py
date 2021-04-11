@@ -20,8 +20,7 @@ import os
 import pytest
 from eth_tester.exceptions import TransactionFailed
 from typing import Tuple
-from umbral.keys import UmbralPrivateKey
-from umbral.point import Point
+from nucypher.crypto.umbral_adapter import UmbralPrivateKey, Point
 from web3.contract import Contract
 
 from nucypher.crypto.api import sha256_digest

@@ -19,8 +19,7 @@ along with nucypher.  If not, see <https://www.gnu.org/licenses/>.
 import os
 import pytest
 from eth_tester.exceptions import TransactionFailed
-from umbral import keys, pre
-from umbral.signing import Signer
+from nucypher.crypto.umbral_adapter import pre, Signer, UmbralPrivateKey
 
 
 @pytest.fixture()
@@ -31,11 +30,11 @@ def deserializer(testerchain, deploy_contract):
 
 @pytest.fixture(scope="module")
 def fragments():
-    delegating_privkey = keys.UmbralPrivateKey.gen_key()
+    delegating_privkey = UmbralPrivateKey.gen_key()
     delegating_pubkey = delegating_privkey.get_pubkey()
-    signing_privkey = keys.UmbralPrivateKey.gen_key()
+    signing_privkey = UmbralPrivateKey.gen_key()
     signer = Signer(signing_privkey)
-    priv_key_bob = keys.UmbralPrivateKey.gen_key()
+    priv_key_bob = UmbralPrivateKey.gen_key()
     pub_key_bob = priv_key_bob.get_pubkey()
     kfrags = pre.generate_kfrags(delegating_privkey=delegating_privkey,
                                  signer=signer,

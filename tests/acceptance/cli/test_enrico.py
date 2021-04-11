@@ -15,7 +15,7 @@
  along with nucypher.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-from umbral.keys import UmbralPrivateKey
+from nucypher.crypto.umbral_adapter import UmbralPrivateKey
 
 from nucypher.cli.main import nucypher_cli
 

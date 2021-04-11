@@ -18,7 +18,7 @@
 import functools
 import maya
 from typing import Union
-from umbral.keys import UmbralPublicKey
+from nucypher.crypto.umbral_adapter import UmbralPublicKey
 
 from nucypher.characters.control.specifications import alice, bob, enrico
 from nucypher.crypto.kits import UmbralMessageKit

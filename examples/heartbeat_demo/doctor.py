@@ -24,7 +24,7 @@ import msgpack
 import os
 import shutil
 import sys
-from umbral.keys import UmbralPublicKey
+from nucypher.crypto.umbral_adapter import UmbralPublicKey
 
 from nucypher.characters.lawful import Bob, Enrico, Ursula
 from nucypher.config.constants import TEMPORARY_DOMAIN

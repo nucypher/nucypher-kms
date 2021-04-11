@@ -15,8 +15,7 @@ You should have received a copy of the GNU Affero General Public License
 along with nucypher.  If not, see <https://www.gnu.org/licenses/>.
 """
 from maya import MayaDT
-from umbral.keys import UmbralPublicKey
-from umbral.kfrags import KFrag
+from nucypher.crypto.umbral_adapter import UmbralPublicKey, KFrag
 
 from nucypher.crypto.signing import Signature
 from nucypher.datastore.base import DatastoreRecord, RecordField

@@ -20,7 +20,7 @@ import os
 import pytest
 import tempfile
 from pathlib import Path
-from umbral.keys import UmbralPrivateKey
+from nucypher.crypto.umbral_adapter import UmbralPrivateKey
 
 from nucypher.cli.main import nucypher_cli
 from nucypher.policy.identity import Card

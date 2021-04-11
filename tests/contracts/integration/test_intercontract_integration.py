@@ -19,8 +19,7 @@ import os
 import pytest
 from eth_tester.exceptions import TransactionFailed
 from eth_utils import to_canonical_address, to_wei
-from umbral.keys import UmbralPrivateKey
-from umbral.signing import Signer
+from nucypher.crypto.umbral_adapter import UmbralPrivateKey, Signer
 from web3.contract import Contract
 
 from nucypher.blockchain.economics import BaseEconomics

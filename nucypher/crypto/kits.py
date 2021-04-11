@@ -19,7 +19,7 @@ from typing import Optional
 
 from bytestring_splitter import BytestringKwargifier, VariableLengthBytestring
 from constant_sorrow.constants import NOT_SIGNED, UNKNOWN_SENDER
-from umbral.keys import UmbralPublicKey
+from nucypher.crypto.umbral_adapter import UmbralPublicKey
 
 from nucypher.crypto.splitters import capsule_splitter, key_splitter
 

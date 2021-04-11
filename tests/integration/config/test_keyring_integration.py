@@ -21,10 +21,9 @@ from unittest.mock import ANY
 
 import pytest
 from constant_sorrow.constants import FEDERATED_ADDRESS
-from cryptography.hazmat.primitives.serialization.base import Encoding
+from cryptography.hazmat.primitives.serialization import Encoding
 from flask import Flask
-from umbral.keys import UmbralPrivateKey
-from umbral.signing import Signer
+from nucypher.crypto.umbral_adapter import UmbralPrivateKey, Signer
 
 from nucypher.characters.lawful import Alice, Bob, Ursula
 from nucypher.config.constants import TEMPORARY_DOMAIN

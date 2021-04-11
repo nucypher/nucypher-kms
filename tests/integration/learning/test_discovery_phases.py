@@ -19,7 +19,7 @@ import pytest
 import time
 from datetime import datetime
 from flask import Response
-from umbral.keys import UmbralPublicKey
+from nucypher.crypto.umbral_adapter import UmbralPublicKey
 from unittest.mock import patch
 
 from nucypher.characters.lawful import Ursula

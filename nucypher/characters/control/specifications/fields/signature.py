@@ -18,7 +18,7 @@
 from base64 import b64decode, b64encode
 
 from marshmallow import fields
-from umbral.signing import Signature
+from nucypher.crypto.umbral_adapter import Signature
 
 from nucypher.characters.control.specifications.exceptions import InvalidInputData, InvalidNativeDataTypes
 from nucypher.characters.control.specifications.fields.base import BaseField

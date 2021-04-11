@@ -34,7 +34,7 @@ from mako import exceptions as mako_exceptions
 from mako.template import Template
 from maya import MayaDT
 from typing import Tuple
-from umbral.kfrags import KFrag
+from nucypher.crypto.umbral_adapter import KFrag
 from web3.exceptions import TimeExhausted
 
 import nucypher

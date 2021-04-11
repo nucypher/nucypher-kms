@@ -24,9 +24,7 @@ from constant_sorrow import constants
 from cryptography.hazmat.primitives.asymmetric import ec
 from hendrix.deploy.tls import HendrixDeployTLS
 from hendrix.facilities.services import ExistingKeyTLSContextFactory
-from umbral import pre
-from umbral.keys import UmbralPrivateKey, UmbralPublicKey
-from umbral.signing import Signature, Signer
+from nucypher.crypto.umbral_adapter import UmbralPrivateKey, UmbralPublicKey, Signature, Signer, pre
 
 from nucypher.config.constants import MAX_UPLOAD_CONTENT_LENGTH
 from nucypher.crypto import api as API
@@ -67,16 +65,14 @@ class Keypair(object):
             raise ValueError(
                 "Either pass a valid key or, if you want to generate keys, set generate_keys_if_needed to True.")
 
-    def serialize_pubkey(self, as_b64=False) -> bytes:
+    def serialize_pubkey(self) -> bytes:
         """
         Serializes the pubkey for storage/transport in either urlsafe base64
         or as a bytestring.
 
-        :param as_b64: Return the pubkey as urlsafe base64 byte string
         :return: The serialized pubkey in bytes
         """
-        encoder = base64.urlsafe_b64encode if as_b64 else None
-        return self.pubkey.to_bytes(encoder=encoder)
+        return self.pubkey.to_bytes()
 
     def fingerprint(self):
         """

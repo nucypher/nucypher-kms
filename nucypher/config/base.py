@@ -36,7 +36,7 @@ from decimal import Decimal
 from eth_utils.address import is_checksum_address
 from tempfile import TemporaryDirectory
 from typing import Union, Callable, Optional, List
-from umbral.signing import Signature
+from nucypher.crypto.umbral_adapter import Signature
 
 from nucypher.blockchain.eth.interfaces import BlockchainInterfaceFactory
 from nucypher.blockchain.eth.networks import NetworksInventory

@@ -28,7 +28,7 @@ import os
 from bytestring_splitter import VariableLengthBytestring, BytestringKwargifier
 from constant_sorrow.constants import ALICE, BOB, NO_SIGNATURE
 from hexbytes.main import HexBytes
-from umbral.keys import UmbralPublicKey
+from nucypher.crypto.umbral_adapter import UmbralPublicKey
 
 from nucypher.characters.base import Character
 from nucypher.characters.lawful import Alice, Bob

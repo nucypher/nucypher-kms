@@ -18,12 +18,7 @@ along with nucypher.  If not, see <https://www.gnu.org/licenses/>.
 import os
 import pytest
 from eth_tester.exceptions import TransactionFailed
-from umbral.config import default_params
-from umbral.curvebn import CurveBN
-from umbral.keys import UmbralPrivateKey
-from umbral.point import Point
-from umbral.random_oracles import ExtendedKeccak, hash_to_curvebn
-from umbral.signing import Signer
+from nucypher.crypto.umbral_adapter import Signer, CurveBN, UmbralPrivateKey, Point, hash_to_curvebn
 
 from nucypher.crypto.signing import SignatureStamp
 

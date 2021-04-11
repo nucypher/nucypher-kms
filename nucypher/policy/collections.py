@@ -30,10 +30,7 @@ from cryptography.hazmat.backends.openssl import backend
 from cryptography.hazmat.primitives import hashes
 from eth_utils import to_canonical_address, to_checksum_address
 from typing import Optional, Tuple
-from umbral.config import default_params
-from umbral.curvebn import CurveBN
-from umbral.keys import UmbralPublicKey
-from umbral.pre import Capsule
+from nucypher.crypto.umbral_adapter import UmbralPublicKey, Capsule, CurveBN
 
 from nucypher.blockchain.eth.constants import ETH_ADDRESS_BYTE_LENGTH, ETH_HASH_BYTE_LENGTH
 from nucypher.characters.lawful import Bob, Character
@@ -316,7 +313,7 @@ class WorkOrder:
         def __bytes__(self):
             data = bytes(self.capsule) + bytes(self.signature)
             if self.cfrag and self.cfrag_signature:
-                data += VariableLengthBytestring(self.cfrag) + bytes(self.cfrag_signature)
+                data += bytes(self.cfrag) + bytes(self.cfrag_signature)
             return data
 
         @classmethod
@@ -447,12 +444,6 @@ class WorkOrder:
         ursula_verifying_key = self.ursula.stamp.as_umbral_pubkey()
 
         for task, (cfrag, cfrag_signature) in zip(self.tasks.values(), cfrags_and_signatures):
-            # Validate re-encryption metadata
-            metadata_input = bytes(task.signature)
-            metadata_as_signature = Signature.from_bytes(cfrag.proof.metadata)
-            if not metadata_as_signature.verify(metadata_input, ursula_verifying_key):
-                raise InvalidSignature(f"Invalid metadata for {cfrag}.")
-                # TODO: Instead of raising, we should do something (#957)
 
             # Validate re-encryption signatures
             if cfrag_signature.verify(bytes(cfrag), ursula_verifying_key):
