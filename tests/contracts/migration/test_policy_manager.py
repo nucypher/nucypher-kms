@@ -243,19 +243,19 @@ def test_policy_manager_migration(testerchain, token_economics, deploy_contract)
         assert contract.functions.getNodeFeeDelta(node, (policy_first_period + number_of_periods) // 2).call() == 0
 
     assert contract.functions.nodes(node1).call()[FEE_FIELD] == 0
-    assert contract.functions.nodes(node1).call()[PREVIOUS_FEE_PERIOD_FIELD] == (policy_first_period - 1) // 2
+    assert contract.functions.nodes(node1).call()[PREVIOUS_FEE_PERIOD_FIELD] == current_period - 1
     assert contract.functions.nodes(node1).call()[FEE_RATE_FIELD] == 0
 
     assert contract.functions.nodes(node2).call()[FEE_FIELD] == 0
-    assert contract.functions.nodes(node2).call()[PREVIOUS_FEE_PERIOD_FIELD] == (policy_first_period - 1) // 2
+    assert contract.functions.nodes(node2).call()[PREVIOUS_FEE_PERIOD_FIELD] == current_period - 1
     assert contract.functions.nodes(node2).call()[FEE_RATE_FIELD] == 0
 
     assert contract.functions.nodes(node3).call()[FEE_FIELD] == 2 * rate
-    assert contract.functions.nodes(node3).call()[PREVIOUS_FEE_PERIOD_FIELD] == (policy_first_period + 1) // 2
+    assert contract.functions.nodes(node3).call()[PREVIOUS_FEE_PERIOD_FIELD] == current_period - 1
     assert contract.functions.nodes(node3).call()[FEE_RATE_FIELD] == 0
 
     assert contract.functions.nodes(node4).call()[FEE_FIELD] == 0
-    assert contract.functions.nodes(node4).call()[PREVIOUS_FEE_PERIOD_FIELD] == (policy_first_period + 1) // 2
+    assert contract.functions.nodes(node4).call()[PREVIOUS_FEE_PERIOD_FIELD] == current_period - 1
     assert contract.functions.nodes(node4).call()[FEE_RATE_FIELD] == 0
 
     tx = escrow.functions.ping(node1, current_period - 1, 0, current_period + 1).transact()
@@ -380,8 +380,9 @@ def test_previous_fee_period(testerchain, token_economics, deploy_contract):
     tx = escrow.functions.migrate(node1).transact()
     testerchain.wait_for_receipt(tx)
 
+    current_period = contract.functions.getCurrentPeriod().call()
     assert contract.functions.nodes(node1).call()[FEE_FIELD] == 0
-    assert contract.functions.nodes(node1).call()[PREVIOUS_FEE_PERIOD_FIELD] == (current_period - 1) // 2
+    assert contract.functions.nodes(node1).call()[PREVIOUS_FEE_PERIOD_FIELD] == current_period - 1
     assert contract.functions.nodes(node1).call()[FEE_RATE_FIELD] == 0
 
     # Check ping() method

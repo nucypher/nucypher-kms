@@ -17,7 +17,7 @@ import "contracts/proxy/Upgradeable.sol";
 /**
 * @title PolicyManager
 * @notice Contract holds policy data and locks accrued policy fees
-* @dev |v6.3.1|
+* @dev |v6.3.2|
 */
 contract PolicyManager is Upgradeable {
     using SafeERC20 for NuCypherToken;
@@ -180,10 +180,11 @@ contract PolicyManager is Upgradeable {
     */
     function migrate(address _node) external onlyEscrowContract {
         NodeInfo storage nodeInfo = nodes[_node];
+        uint16 currentPeriod = getCurrentPeriod();
         // with previous period length any previousFeePeriod will be greater than current period
         // this is a sign of not migrated node
-        require(nodeInfo.previousFeePeriod >= getCurrentPeriod());
-        nodeInfo.previousFeePeriod = recalculatePeriod(nodeInfo.previousFeePeriod);
+        require(nodeInfo.previousFeePeriod >= currentPeriod);
+        nodeInfo.previousFeePeriod = currentPeriod - 1;
         nodeInfo.feeRate = 0;
     }
 
@@ -434,7 +435,7 @@ contract PolicyManager is Upgradeable {
     {
         NodeInfo storage node = nodes[_node];
         // protection from calling not migrated node, see migrate()
-        require(node.previousFeePeriod <= getCurrentPeriod());
+        require(node.previousFeePeriod < getCurrentPeriod());
         if (_processedPeriod1 != 0) {
             updateFee(node, _processedPeriod1);
         }
