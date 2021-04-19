@@ -1,0 +1,3 @@
+Proper fix for `previousFeePeriod` migration bug.
+Softened restrictions for `mint()` method.
+Additional restriction for hours per period to prevent potential overflow during period calculations.
