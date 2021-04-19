@@ -167,7 +167,7 @@ def test_minting(testerchain, token, escrow_contract, token_economics):
     assert policy_manager.functions.getPeriod(staker1, 8).call() == 0
     assert policy_manager.functions.getPeriod(staker1, 9).call() == current_period + 1
 
-    tx = escrow.functions.mint().transact({'from': staker2})
+    tx = escrow.functions.mint(staker2).transact({'from': staker1})
     testerchain.wait_for_receipt(tx)
     assert policy_manager.functions.getPeriodsLength(staker2).call() == 7
     assert policy_manager.functions.getPeriod(staker2, 4).call() == 0
@@ -233,7 +233,7 @@ def test_minting(testerchain, token, escrow_contract, token_economics):
 
     # Staker mints tokens
     testerchain.time_travel(hours=1)
-    tx = escrow.functions.mint().transact({'from': staker1})
+    tx = escrow.functions.mint(staker1).transact({'from': staker1})
     testerchain.wait_for_receipt(tx)
     # But Staker(2) can't get reward because she did not make a commitment
     tx = escrow.functions.mint().transact({'from': staker2})
@@ -415,6 +415,9 @@ def test_minting(testerchain, token, escrow_contract, token_economics):
     # Now Staker(2) can't even call mint() because she is not staker anymore
     with pytest.raises((TransactionFailed, ValueError)):
         tx = escrow.functions.mint().transact({'from': staker2})
+        testerchain.wait_for_receipt(tx)
+    with pytest.raises((TransactionFailed, ValueError)):
+        tx = escrow.functions.mint(staker2).transact({'from': staker1})
         testerchain.wait_for_receipt(tx)
 
     assert 4 == len(deposit_log.get_all_entries())

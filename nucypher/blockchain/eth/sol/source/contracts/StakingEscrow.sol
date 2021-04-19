@@ -108,7 +108,7 @@ contract StakingEscrowStub is Upgradeable {
 * @title StakingEscrow
 * @notice Contract holds and locks stakers tokens.
 * Each staker that locks their tokens will receive some compensation
-* @dev |v5.7.2|
+* @dev |v5.8.1|
 */
 contract StakingEscrow is Issuer, IERC900History {
 
@@ -1199,7 +1199,7 @@ contract StakingEscrow is Issuer, IERC900History {
         require(info.nextCommittedPeriod != nextPeriod);
 
         uint16 lastCommittedPeriod = getLastCommittedPeriod(staker);
-        (uint16 processedPeriod1, uint16 processedPeriod2) = mint(staker);
+        (uint16 processedPeriod1, uint16 processedPeriod2) = internalMint(staker);
 
         uint256 lockedTokens = getLockedTokens(info, currentPeriod, nextPeriod);
         require(lockedTokens > 0);
@@ -1289,19 +1289,30 @@ contract StakingEscrow is Issuer, IERC900History {
     /**
     * @notice Mint tokens for previous periods if staker locked their tokens and made a commitment
     */
-    function mint() external onlyStaker {
+    function mint() external {
+        mint(msg.sender);
+    }
+
+    /**
+    * @notice Mint tokens for previous periods if staker locked their tokens and made a commitment
+    * @param _staker Staker
+    */
+    function mint(address _staker) public {
         // save last committed period to the storage if both periods will be empty after minting
         // because we won't be able to calculate last committed period
         // see getLastCommittedPeriod(address)
-        StakerInfo storage info = stakerInfo[msg.sender];
+        StakerInfo storage info = stakerInfo[_staker];
+        require((info.value > 0 || info.nextCommittedPeriod != 0) &&
+            info.flags.bitSet(MIGRATED_INDEX));
+
         uint16 previousPeriod = getCurrentPeriod() - 1;
         if (info.nextCommittedPeriod <= previousPeriod && info.nextCommittedPeriod != 0) {
             info.lastCommittedPeriod = info.nextCommittedPeriod;
         }
-        (uint16 processedPeriod1, uint16 processedPeriod2) = mint(msg.sender);
+        (uint16 processedPeriod1, uint16 processedPeriod2) = internalMint(_staker);
 
         if (processedPeriod1 != 0 || processedPeriod2 != 0) {
-            policyManager.ping(msg.sender, processedPeriod1, processedPeriod2, 0);
+            policyManager.ping(_staker, processedPeriod1, processedPeriod2, 0);
         }
     }
 
@@ -1311,7 +1322,7 @@ contract StakingEscrow is Issuer, IERC900History {
     * @return processedPeriod1 Processed period: currentCommittedPeriod or zero
     * @return processedPeriod2 Processed period: nextCommittedPeriod or zero
     */
-    function mint(address _staker) internal returns (uint16 processedPeriod1, uint16 processedPeriod2) {
+    function internalMint(address _staker) internal returns (uint16 processedPeriod1, uint16 processedPeriod2) {
         uint16 currentPeriod = getCurrentPeriod();
         uint16 previousPeriod = currentPeriod - 1;
         StakerInfo storage info = stakerInfo[_staker];

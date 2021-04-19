@@ -1002,7 +1002,7 @@ def test_merge(testerchain, token, escrow_contract, token_economics):
     assert escrow.functions.getLastPeriodOfSubStake(staker, 2).call() == current_period + duration_2
 
     # One of the sub-stake become inactive after minting
-    tx = escrow.functions.mint().transact({'from': staker})
+    tx = escrow.functions.mint(staker).transact({'from': creator})
     testerchain.wait_for_receipt(tx)
     tx = escrow.functions.deposit(staker, minimum_allowed_locked, duration_2).transact({'from': staker})
     testerchain.wait_for_receipt(tx)
