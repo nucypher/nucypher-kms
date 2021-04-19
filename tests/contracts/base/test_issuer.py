@@ -41,8 +41,8 @@ def test_issuer(testerchain, token, deploy_contract):
                               lock_duration_coefficient_1=10 ** 4,
                               lock_duration_coefficient_2=2 * 10 ** 4,
                               maximum_rewarded_periods=10 ** 4,
-                              genesis_hours_per_period=1,
-                              hours_per_period=1)
+                              genesis_hours_per_period=10,
+                              hours_per_period=10)
 
     def calculate_first_phase_reward(locked, total_locked, locked_periods):
         return economics.first_phase_max_issuance * locked * \
@@ -204,8 +204,8 @@ def test_issuance_first_phase(testerchain, token, deploy_contract):
                               lock_duration_coefficient_1=1,
                               lock_duration_coefficient_2=2,
                               maximum_rewarded_periods=1,
-                              genesis_hours_per_period=1,
-                              hours_per_period=1)
+                              genesis_hours_per_period=10,
+                              hours_per_period=10)
 
     creator = testerchain.client.accounts[0]
     staker = testerchain.client.accounts[1]
@@ -309,8 +309,8 @@ def test_issuance_second_phase(testerchain, token, deploy_contract):
                               lock_duration_coefficient_1=1,
                               lock_duration_coefficient_2=2,
                               maximum_rewarded_periods=1,
-                              genesis_hours_per_period=1,
-                              hours_per_period=1)
+                              genesis_hours_per_period=10,
+                              hours_per_period=10)
 
     creator = testerchain.client.accounts[0]
     staker = testerchain.client.accounts[1]
@@ -398,8 +398,8 @@ def test_upgrading(testerchain, token, deploy_contract):
     contract_library_v1, _ = deploy_contract(
         contract_name='IssuerMock',
         _token=token.address,
-        _genesisHoursPerPeriod=1,
-        _hoursPerPeriod=1,
+        _genesisHoursPerPeriod=10,
+        _hoursPerPeriod=10,
         _issuanceDecayCoefficient=1,
         _lockDurationCoefficient1=1,
         _lockDurationCoefficient2=2,
@@ -413,8 +413,8 @@ def test_upgrading(testerchain, token, deploy_contract):
     contract_library_v2, _ = deploy_contract(
         contract_name='IssuerV2Mock',
         _token=token.address,
-        _genesisHoursPerPeriod=2,
-        _hoursPerPeriod=2,
+        _genesisHoursPerPeriod=20,
+        _hoursPerPeriod=20,
         _issuanceDecayCoefficient=2,
         _lockDurationCoefficient1=2,
         _lockDurationCoefficient2=4,
@@ -448,8 +448,8 @@ def test_upgrading(testerchain, token, deploy_contract):
     testerchain.wait_for_receipt(tx)
     assert contract_library_v2.address == dispatcher.functions.target().call()
     assert 8 == contract.functions.mintingCoefficient().call()
-    assert 2 * 3600 == contract.functions.secondsPerPeriod().call()
-    assert 2 * 3600 == contract.functions.genesisSecondsPerPeriod().call()
+    assert 20 * 3600 == contract.functions.secondsPerPeriod().call()
+    assert 20 * 3600 == contract.functions.genesisSecondsPerPeriod().call()
     assert 2 == contract.functions.lockDurationCoefficient1().call()
     assert 4 == contract.functions.lockDurationCoefficient2().call()
     assert 2 == contract.functions.maximumRewardedPeriods().call()
@@ -466,8 +466,8 @@ def test_upgrading(testerchain, token, deploy_contract):
     contract_library_bad, _ = deploy_contract(
         contract_name='IssuerBad',
         _token=token.address,
-        _genesisHoursPerPeriod=2,
-        _hoursPerPeriod=2,
+        _genesisHoursPerPeriod=20,
+        _hoursPerPeriod=20,
         _issuanceDecayCoefficient=2,
         _lockDurationCoefficient1=2,
         _lockDurationCoefficient2=4,
@@ -488,8 +488,8 @@ def test_upgrading(testerchain, token, deploy_contract):
     # Check old values
     assert contract_library_v1.address == dispatcher.functions.target().call()
     assert 2 == contract.functions.mintingCoefficient().call()
-    assert 3600 == contract.functions.secondsPerPeriod().call()
-    assert 3600 == contract.functions.genesisSecondsPerPeriod().call()
+    assert 10 * 3600 == contract.functions.secondsPerPeriod().call()
+    assert 10 * 3600 == contract.functions.genesisSecondsPerPeriod().call()
     assert 1 == contract.functions.lockDurationCoefficient1().call()
     assert 2 == contract.functions.lockDurationCoefficient2().call()
     assert 1 == contract.functions.maximumRewardedPeriods().call()

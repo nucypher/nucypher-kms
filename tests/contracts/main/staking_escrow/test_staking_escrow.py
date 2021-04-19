@@ -183,7 +183,7 @@ def test_staking(testerchain, token, escrow_contract):
     assert 500 == event_args['value']
 
     # Checks locked tokens in the next period
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     current_period = escrow.functions.getCurrentPeriod().call()
     assert 1000 == escrow.functions.getLockedTokens(staker1, 0).call()
     assert 500 == escrow.functions.getLockedTokens(staker2, 0).call()
@@ -274,7 +274,7 @@ def test_staking(testerchain, token, escrow_contract):
     assert 0 == len(stakers)
 
     # Wait 1 period and checks locking
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     assert 1500 == escrow.functions.getLockedTokens(staker1, 0).call()
 
     # Only one staker is active
@@ -287,7 +287,7 @@ def test_staking(testerchain, token, escrow_contract):
     # Make a commitment and wait 1 period, locking will be decreased because of end of one stake
     tx = escrow.functions.commitToNextPeriod().transact({'from': staker1})
     testerchain.wait_for_receipt(tx)
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     current_period = escrow.functions.getCurrentPeriod().call()
     assert 500 == escrow.functions.getLockedTokens(staker1, 0).call()
     assert 0 == escrow.functions.getLockedTokens(staker1, 1).call()
@@ -344,7 +344,7 @@ def test_staking(testerchain, token, escrow_contract):
     assert 600 == escrow.functions.getLockedTokens(staker1, 1).call()
     assert 600 == escrow.functions.getLockedTokens(staker1, 2).call()
     assert 0 == escrow.functions.getLockedTokens(staker1, 3).call()
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     assert 600 == escrow.functions.getLockedTokens(staker1, 0).call()
     assert 600 == escrow.functions.getLockedTokens(staker1, 1).call()
     assert 0 == escrow.functions.getLockedTokens(staker1, 2).call()
@@ -358,7 +358,7 @@ def test_staking(testerchain, token, escrow_contract):
     assert 1100 == escrow.functions.getLockedTokens(staker1, 1).call()
     assert 500 == escrow.functions.getLockedTokens(staker1, 2).call()
     assert 0 == escrow.functions.getLockedTokens(staker1, 3).call()
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     assert 1100 == escrow.functions.getLockedTokens(staker1, 0).call()
 
     # Staker(2) increases lock by deposit more tokens using approveAndCall
@@ -371,7 +371,7 @@ def test_staking(testerchain, token, escrow_contract):
     assert 1000 == escrow.functions.getLockedTokens(staker2, 1).call()
     assert 500 == escrow.functions.getLockedTokens(staker2, 2).call()
     assert 0 == escrow.functions.getLockedTokens(staker2, 3).call()
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
 
     # And increases locked time by dividing stake into two parts
     current_period = escrow.functions.getCurrentPeriod().call()
@@ -402,7 +402,7 @@ def test_staking(testerchain, token, escrow_contract):
 
     tx = escrow.functions.commitToNextPeriod().transact({'from': staker2})
     testerchain.wait_for_receipt(tx)
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     # Check number of stakes and last stake parameters
     current_period = escrow.functions.getCurrentPeriod().call()
     assert 3 == escrow.functions.getSubStakesLength(staker2).call()
@@ -504,10 +504,10 @@ def test_staking(testerchain, token, escrow_contract):
         testerchain.wait_for_receipt(tx)
 
     # Just wait and make a commitment
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     tx = escrow.functions.commitToNextPeriod().transact({'from': staker2})
     testerchain.wait_for_receipt(tx)
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     tx = escrow.functions.commitToNextPeriod().transact({'from': staker2})
     testerchain.wait_for_receipt(tx)
 
@@ -672,7 +672,7 @@ def test_increase_lock(testerchain, token, escrow_contract, token_economics):
     assert event_args['value'] == minimum_allowed_locked // 4
 
     # Wait next period and try to increase again to check creation of temporary sub-stake
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     duration -= 1
     current_period = escrow.functions.getCurrentPeriod().call()
     assert escrow.functions.getLockedTokens(staker, 0).call() == stake
@@ -719,7 +719,7 @@ def test_increase_lock(testerchain, token, escrow_contract, token_economics):
         testerchain.wait_for_receipt(tx)
 
     # Wait next period and check that temporary sub-stake is active until minting
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     stake = next_stake
     assert escrow.functions.getLockedTokens(staker, 0).call() == stake
     assert escrow.functions.getLockedTokens(staker, 1).call() == stake
@@ -741,7 +741,7 @@ def test_increase_lock(testerchain, token, escrow_contract, token_economics):
     for i in range(duration):
         tx = escrow.functions.commitToNextPeriod().transact({'from': staker})
         testerchain.wait_for_receipt(tx)
-        testerchain.time_travel(hours=1)
+        testerchain.time_travel(hours=10)
     tx = escrow.functions.commitToNextPeriod().transact({'from': staker})
     testerchain.wait_for_receipt(tx)
 
@@ -923,10 +923,10 @@ def test_merge(testerchain, token, escrow_contract, token_economics):
     testerchain.wait_for_receipt(tx)
     tx = escrow.functions.commitToNextPeriod().transact({'from': staker})
     testerchain.wait_for_receipt(tx)
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     tx = escrow.functions.commitToNextPeriod().transact({'from': staker})
     testerchain.wait_for_receipt(tx)
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
 
     # Both sub-stakes must have last period in the next period or later
     with pytest.raises((TransactionFailed, ValueError)):
@@ -938,7 +938,7 @@ def test_merge(testerchain, token, escrow_contract, token_economics):
 
     tx = escrow.functions.commitToNextPeriod().transact({'from': staker})
     testerchain.wait_for_receipt(tx)
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     tx = escrow.functions.commitToNextPeriod().transact({'from': staker})
     testerchain.wait_for_receipt(tx)
     duration_2 -= 3
@@ -982,7 +982,7 @@ def test_merge(testerchain, token, escrow_contract, token_economics):
     assert event_args['lastPeriod'] == current_period + duration_2
 
     # Deposit again, both sub-stakes are still active and new one will be created
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     duration_2 -= 1
     current_period = escrow.functions.getCurrentPeriod().call()
     tx = escrow.functions.deposit(staker, 2 * minimum_allowed_locked, duration_2).transact({'from': staker})
@@ -1068,7 +1068,7 @@ def test_max_sub_stakes(testerchain, token, escrow_contract):
 
     tx = escrow.functions.commitToNextPeriod().transact({'from': staker})
     testerchain.wait_for_receipt(tx)
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     for index in range(MAX_SUB_STAKES - 1):
         tx = escrow.functions.deposit(staker, 100, 2).transact({'from': staker})
         testerchain.wait_for_receipt(tx)
@@ -1083,10 +1083,10 @@ def test_max_sub_stakes(testerchain, token, escrow_contract):
     # After two periods first sub stake will be unlocked and we can lock again
     tx = escrow.functions.commitToNextPeriod().transact({'from': staker})
     testerchain.wait_for_receipt(tx)
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     tx = escrow.functions.commitToNextPeriod().transact({'from': staker})
     testerchain.wait_for_receipt(tx)
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     assert 2900 == escrow.functions.getLockedTokens(staker, 0).call()
     assert 0 == escrow.functions.getLockedTokens(staker, 1).call()
     assert MAX_SUB_STAKES == escrow.functions.getSubStakesLength(staker).call()
@@ -1211,8 +1211,8 @@ def test_allowable_locked_tokens(testerchain, token_economics, token, escrow_con
     for _ in range(duration):
         tx = escrow.functions.commitToNextPeriod().transact({'from': staker1})
         testerchain.wait_for_receipt(tx)
-        testerchain.time_travel(hours=1)
-    testerchain.time_travel(hours=2)
+        testerchain.time_travel(hours=10)
+    testerchain.time_travel(hours=20)
     staker1_lock = maximum_allowed - staker1_lock
     assert escrow.functions.getLockedTokens(staker1, 0).call() == staker1_lock
 
@@ -1246,8 +1246,8 @@ def test_allowable_locked_tokens(testerchain, token_economics, token, escrow_con
     for _ in range(duration):
         tx = escrow.functions.commitToNextPeriod().transact({'from': staker1})
         testerchain.wait_for_receipt(tx)
-        testerchain.time_travel(hours=1)
-    testerchain.time_travel(hours=2)
+        testerchain.time_travel(hours=10)
+    testerchain.time_travel(hours=20)
     staker1_lock = escrow.functions.getLockedTokens(staker1, 0).call()
     assert staker1_lock < maximum_allowed
     sub_stake_index = escrow.functions.getSubStakesLength(staker1).call() - 1

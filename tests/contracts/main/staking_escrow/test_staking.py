@@ -140,7 +140,7 @@ def test_minting(testerchain, token, escrow_contract, token_economics):
         testerchain.wait_for_receipt(tx)
 
     # Only Staker makes a commitment to next period
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     tx = escrow.functions.commitToNextPeriod().transact({'from': staker1})
     testerchain.wait_for_receipt(tx)
     current_period = escrow.functions.getCurrentPeriod().call()
@@ -158,7 +158,7 @@ def test_minting(testerchain, token, escrow_contract, token_economics):
 
     # Staker and Staker(2) mint tokens for last periods
     # And only Staker make a commitment to next period
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     tx = escrow.functions.commitToNextPeriod().transact({'from': staker1})
     testerchain.wait_for_receipt(tx)
     current_period = escrow.functions.getCurrentPeriod().call()
@@ -209,7 +209,7 @@ def test_minting(testerchain, token, escrow_contract, token_economics):
     assert policy_manager.functions.getPeriodsLength(staker1).call() == 10
 
     # Staker can't make a commitment to next period because stake is unlocked in current period
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     current_supply += ursula1_reward + ursula2_reward
     with pytest.raises((TransactionFailed, ValueError)):
         tx = escrow.functions.commitToNextPeriod().transact({'from': staker1})
@@ -232,7 +232,7 @@ def test_minting(testerchain, token, escrow_contract, token_economics):
     assert policy_manager.functions.getPeriod(staker2, 9).call() == current_period + 1
 
     # Staker mints tokens
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     tx = escrow.functions.mint(staker1).transact({'from': staker1})
     testerchain.wait_for_receipt(tx)
     # But Staker(2) can't get reward because she did not make a commitment
@@ -258,7 +258,7 @@ def test_minting(testerchain, token, escrow_contract, token_economics):
     assert policy_manager.functions.getPeriod(staker1, 12).call() == 0
 
     # Staker(2) mints tokens
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     current_supply += ursula1_reward
     tx = escrow.functions.mint().transact({'from': staker2})
     testerchain.wait_for_receipt(tx)
@@ -314,7 +314,7 @@ def test_minting(testerchain, token, escrow_contract, token_economics):
     assert current_period == downtime[1]
 
     # Staker(2) mints only one period
-    testerchain.time_travel(hours=5)
+    testerchain.time_travel(hours=50)
     current_supply += ursula2_reward
     current_period = escrow.functions.getCurrentPeriod().call()
     assert current_period - 4 == escrow.functions.getLastCommittedPeriod(staker2).call()
@@ -347,11 +347,11 @@ def test_minting(testerchain, token, escrow_contract, token_economics):
     assert current_period - 1 == event_args['period']
 
     # Staker(2) makes a commitment to remaining periods
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     tx = escrow.functions.commitToNextPeriod().transact({'from': staker2})
     testerchain.wait_for_receipt(tx)
     assert 4 == escrow.functions.getPastDowntimeLength(staker2).call()
-    testerchain.time_travel(hours=2)
+    testerchain.time_travel(hours=20)
     current_period = escrow.functions.getCurrentPeriod().call()
     tx = escrow.functions.commitToNextPeriod().transact({'from': staker2})
     testerchain.wait_for_receipt(tx)
@@ -361,7 +361,7 @@ def test_minting(testerchain, token, escrow_contract, token_economics):
     assert policy_manager.functions.getPeriod(staker2, 24).call() == current_period + 1
 
     # Staker(2) withdraws all
-    testerchain.time_travel(hours=2)
+    testerchain.time_travel(hours=20)
     worker_log_length = len(worker_log.get_all_entries())
     staker2_stake = escrow.functions.getAllTokens(staker2).call()
     assert 0 == escrow.functions.getLockedTokens(staker2, 0).call()
@@ -471,7 +471,7 @@ def test_slashing(testerchain, token, adjudicator, escrow_contract, token_econom
     testerchain.wait_for_receipt(tx)
     tx = escrow.functions.commitToNextPeriod().transact({'from': staker})
     testerchain.wait_for_receipt(tx)
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     current_period = escrow.functions.getCurrentPeriod().call()
     assert 100 == escrow.functions.getAllTokens(staker).call()
     assert 100 == escrow.functions.getLockedTokens(staker, 0).call()
@@ -511,7 +511,7 @@ def test_slashing(testerchain, token, adjudicator, escrow_contract, token_econom
     testerchain.wait_for_receipt(tx)
     tx = escrow.functions.commitToNextPeriod().transact({'from': staker})
     testerchain.wait_for_receipt(tx)
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     current_period += 1
     tx = escrow.functions.commitToNextPeriod().transact({'from': staker})
     testerchain.wait_for_receipt(tx)
@@ -545,7 +545,7 @@ def test_slashing(testerchain, token, adjudicator, escrow_contract, token_econom
     # New deposit of a longer sub stake
     tx = escrow.functions.deposit(staker, 100, 6).transact({'from': staker})
     testerchain.wait_for_receipt(tx)
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     current_period += 1
     assert 90 == escrow.functions.getLockedTokensInPast(staker, 1).call()
     assert 190 == escrow.functions.getLockedTokens(staker, 0).call()
@@ -581,7 +581,7 @@ def test_slashing(testerchain, token, adjudicator, escrow_contract, token_econom
     testerchain.wait_for_receipt(tx)
     tx = escrow.functions.commitToNextPeriod().transact({'from': staker})
     testerchain.wait_for_receipt(tx)
-    testerchain.time_travel(hours=2)
+    testerchain.time_travel(hours=20)
     current_period += 2
     assert 290 == escrow.functions.getLockedTokensInPast(staker, 1).call()
     assert 290 == escrow.functions.getLockedTokens(staker, 0).call()
@@ -685,10 +685,10 @@ def test_slashing(testerchain, token, adjudicator, escrow_contract, token_econom
     assert 0 == event_args['reward']
 
     # After two periods two shortest sub stakes will be unlocked, lock again and slash after this
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     tx = escrow.functions.commitToNextPeriod().transact({'from': staker})
     testerchain.wait_for_receipt(tx)
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
 
     current_period += 2
     assert 260 == escrow.functions.getLockedTokens(staker, 0).call()
@@ -769,14 +769,14 @@ def test_slashing(testerchain, token, adjudicator, escrow_contract, token_econom
     testerchain.wait_for_receipt(tx)
     tx = escrow.functions.commitToNextPeriod().transact({'from': staker2})
     testerchain.wait_for_receipt(tx)
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     tx = escrow.functions.deposit(staker2, 100, 2).transact({'from': staker2})
     testerchain.wait_for_receipt(tx)
     tx = escrow.functions.setReStake(False).transact({'from': staker2})
     testerchain.wait_for_receipt(tx)
     tx = escrow.functions.commitToNextPeriod().transact({'from': staker2})
     testerchain.wait_for_receipt(tx)
-    testerchain.time_travel(hours=2)
+    testerchain.time_travel(hours=20)
     assert 100 == escrow.functions.getLockedTokensInPast(staker2, 2).call()
     assert 200 == escrow.functions.getLockedTokensInPast(staker2, 1).call()
     assert 200 == escrow.functions.getLockedTokens(staker2, 0).call()
@@ -818,7 +818,7 @@ def test_slashing(testerchain, token, adjudicator, escrow_contract, token_econom
     # Prepare next case: new deposit is longer than previous sub stake
     tx = escrow.functions.commitToNextPeriod().transact({'from': staker2})
     testerchain.wait_for_receipt(tx)
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     tx = escrow.functions.deposit(staker2, 100, 3).transact({'from': staker2})
     testerchain.wait_for_receipt(tx)
     assert 50 == escrow.functions.getLockedTokens(staker2, 0).call()
@@ -850,7 +850,7 @@ def test_slashing(testerchain, token, adjudicator, escrow_contract, token_econom
     # Next test: optimization does not break saving old sub stake
     tx = escrow.functions.commitToNextPeriod().transact({'from': staker2})
     testerchain.wait_for_receipt(tx)
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     assert 50 == escrow.functions.getLockedTokensInPast(staker2, 1).call()
     assert 140 == escrow.functions.getLockedTokens(staker2, 0).call()
     assert 100 == escrow.functions.getLockedTokens(staker2, 1).call()

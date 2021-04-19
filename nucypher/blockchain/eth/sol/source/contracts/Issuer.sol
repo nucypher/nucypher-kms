@@ -98,7 +98,8 @@ abstract contract Issuer is Upgradeable {
         require(localTotalSupply > 0 &&
             _issuanceDecayCoefficient != 0 &&
             _hoursPerPeriod != 0 &&
-            _genesisHoursPerPeriod != 0 &&
+            // prevent overflow during period calculations
+            _genesisHoursPerPeriod >= 10 &&
             _genesisHoursPerPeriod <= _hoursPerPeriod &&
             _lockDurationCoefficient1 != 0 &&
             _lockDurationCoefficient2 != 0 &&

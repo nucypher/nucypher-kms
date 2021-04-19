@@ -52,8 +52,8 @@ def token_economics():
         lock_duration_coefficient_1=4,
         lock_duration_coefficient_2=8,
         maximum_rewarded_periods=4,
-        genesis_hours_per_period=1,
-        hours_per_period=1,
+        genesis_hours_per_period=10,
+        hours_per_period=10,
         minimum_locked_periods=6,
         minimum_allowed_locked=200,
         maximum_allowed_locked=2000,
@@ -137,9 +137,9 @@ def adjudicator(testerchain, adjudicator_bare, adjudicator_dispatcher):
 def worklock(testerchain, token, escrow_dispatcher, token_economics, deploy_contract):
     # Creator deploys the worklock using test values
     now = testerchain.w3.eth.getBlock('latest').timestamp
-    start_bid_date = ((now + 3600) // 3600 + 1) * 3600  # beginning of the next hour plus 1 hour
-    end_bid_date = start_bid_date + 3600
-    end_cancellation_date = end_bid_date + 3600
+    start_bid_date = ((now + 3600) // 3600 + 10) * 3600  # beginning of the next hour plus 10 hours
+    end_bid_date = start_bid_date + 10 * 3600
+    end_cancellation_date = end_bid_date + 10 * 3600
     boosting_refund = 100
     staking_periods = token_economics.minimum_locked_periods
     min_allowed_bid = to_wei(1, 'ether')
@@ -322,7 +322,7 @@ def test_staking_before_initialization(testerchain,
     contracts_owners = sorted(contracts_owners)
 
     # Travel to the start of the next period to prevent problems with unexpected overflow first period
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
 
     # Give staker some coins
     tx = token.functions.transfer(staker1, 10000).transact({'from': creator})
@@ -447,7 +447,7 @@ def test_worklock_phases(testerchain,
         testerchain.wait_for_receipt(tx)
 
     # Wait for the start of the bidding
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
 
     # Staker does bid
     min_stake = token_economics.minimum_allowed_locked
@@ -493,7 +493,7 @@ def test_worklock_phases(testerchain,
     assert worklock.functions.ethToTokens(2 * deposited_eth_2).call() == min_stake + bonus_worklock_supply // 18
 
     # Wait for the end of the bidding
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
 
     # Can't bid after the end of bidding
     with pytest.raises((TransactionFailed, ValueError)):
@@ -516,7 +516,7 @@ def test_worklock_phases(testerchain,
     assert worklock.functions.workInfo(staker1).call()[3] == 1
 
     # Wait for the end of the cancellation window
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
 
     # Can't cancel after the end of cancellation window
     with pytest.raises((TransactionFailed, ValueError)):
@@ -684,7 +684,7 @@ def test_policy(testerchain,
     # In the same period as staker's deposit
     policy_id_1 = os.urandom(16)
     number_of_periods = 5
-    one_period = 60 * 60
+    one_period = 10 * 60 * 60
     rate = 200
     one_node_value = number_of_periods * rate
     value = 2 * one_node_value
@@ -696,7 +696,7 @@ def test_policy(testerchain,
     policy_manager_balance = one_node_value
 
     # Wait 1 period and deposit from one more staker
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     tx = preallocation_escrow_interface_1.functions.depositAsStaker(1000, 10).transact({'from': staker3})
     testerchain.wait_for_receipt(tx)
     tx = preallocation_escrow_interface_1.functions.bondWorker(staker3).transact({'from': staker3})
@@ -737,7 +737,7 @@ def test_policy(testerchain,
     tx = escrow.functions.commitToNextPeriod().transact({'from': staker1})
     testerchain.wait_for_receipt(tx)
 
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     tx = escrow.functions.commitToNextPeriod().transact({'from': staker1})
     testerchain.wait_for_receipt(tx)
     tx = escrow.functions.commitToNextPeriod().transact({'from': staker2})
@@ -745,7 +745,7 @@ def test_policy(testerchain,
     tx = escrow.functions.commitToNextPeriod().transact({'from': staker3})
     testerchain.wait_for_receipt(tx)
 
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     tx = escrow.functions.commitToNextPeriod().transact({'from': staker1})
     testerchain.wait_for_receipt(tx)
     tx = escrow.functions.commitToNextPeriod().transact({'from': staker2})
@@ -829,7 +829,7 @@ def test_policy(testerchain,
         testerchain.wait_for_receipt(tx)
 
     # Wait, make a commitment, mint
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     tx = escrow.functions.commitToNextPeriod().transact({'from': staker1})
     testerchain.wait_for_receipt(tx)
     tx = escrow.functions.commitToNextPeriod().transact({'from': staker2})
@@ -846,7 +846,7 @@ def test_policy(testerchain,
     pytest.staker1_completed_work = staker1_completed_work
     pytest.staker2_completed_work = staker2_completed_work
 
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     tx = policy_manager.functions.revokeArrangement(policy_id_3, preallocation_escrow_1.address) \
         .transact({'from': alice2, 'gas_price': 0})
     testerchain.wait_for_receipt(tx)
@@ -858,16 +858,16 @@ def test_policy(testerchain,
     tx = escrow.functions.commitToNextPeriod().transact({'from': staker3})
     testerchain.wait_for_receipt(tx)
 
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     tx = escrow.functions.commitToNextPeriod().transact({'from': staker1})
     testerchain.wait_for_receipt(tx)
 
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     tx = escrow.functions.commitToNextPeriod().transact({'from': staker1})
     testerchain.wait_for_receipt(tx)
 
     # Withdraw fee and refund
-    testerchain.time_travel(hours=3)
+    testerchain.time_travel(hours=30)
     staker1_balance = testerchain.client.get_balance(staker1)
     tx = policy_manager.functions.withdraw().transact({'from': staker1, 'gas_price': 0})
     testerchain.wait_for_receipt(tx)
@@ -1045,14 +1045,14 @@ def test_slashing(testerchain,
     testerchain.wait_for_receipt(tx)
     tx = escrow.functions.commitToNextPeriod().transact({'from': staker3})
     testerchain.wait_for_receipt(tx)
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     tx = escrow.functions.commitToNextPeriod().transact({'from': staker1})
     testerchain.wait_for_receipt(tx)
     tx = escrow.functions.commitToNextPeriod().transact({'from': staker2})
     testerchain.wait_for_receipt(tx)
     tx = escrow.functions.commitToNextPeriod().transact({'from': staker3})
     testerchain.wait_for_receipt(tx)
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
 
     # Can't slash directly using the escrow contract
     with pytest.raises((TransactionFailed, ValueError)):
@@ -1214,9 +1214,9 @@ def test_withdraw(testerchain,
         testerchain.wait_for_receipt(tx)
         tx = escrow.functions.commitToNextPeriod().transact({'from': staker3})
         testerchain.wait_for_receipt(tx)
-        testerchain.time_travel(hours=1)
+        testerchain.time_travel(hours=10)
 
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     # Now can turn off re-stake
     tx = preallocation_escrow_interface_1.functions.setReStake(False).transact({'from': staker3})
     testerchain.wait_for_receipt(tx)
@@ -1254,7 +1254,7 @@ def test_withdraw(testerchain,
     assert preallocation_escrow_1_balance < token.functions.balanceOf(preallocation_escrow_1.address).call()
 
     # Unlock and withdraw all tokens in PreallocationEscrow
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     assert 0 == preallocation_escrow_1.functions.getLockedTokens().call()
     assert 0 == preallocation_escrow_2.functions.getLockedTokens().call()
     staker3_balance = token.functions.balanceOf(staker3).call()
