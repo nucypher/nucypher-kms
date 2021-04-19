@@ -719,39 +719,7 @@ contract PolicyManagerOld is Upgradeable {
     /// @dev the `onlyWhileUpgrading` modifier works through a call to the parent `verifyState`
     function verifyState(address _testTarget) public override virtual {
         super.verifyState(_testTarget);
-        Range memory rangeToCheck = delegateGetFeeRateRange(_testTarget);
-        require(feeRateRange.min == rangeToCheck.min &&
-            feeRateRange.defaultValue == rangeToCheck.defaultValue &&
-            feeRateRange.max == rangeToCheck.max);
-        Policy storage policy = policies[RESERVED_POLICY_ID];
-        Policy memory policyToCheck = delegateGetPolicy(_testTarget, RESERVED_POLICY_ID);
-        require(policyToCheck.sponsor == policy.sponsor &&
-            policyToCheck.owner == policy.owner &&
-            policyToCheck.feeRate == policy.feeRate &&
-            policyToCheck.startTimestamp == policy.startTimestamp &&
-            policyToCheck.endTimestamp == policy.endTimestamp &&
-            policyToCheck.disabled == policy.disabled);
-
-        require(delegateGet(_testTarget, this.getArrangementsLength.selector, RESERVED_POLICY_ID) ==
-            policy.arrangements.length);
-        if (policy.arrangements.length > 0) {
-            ArrangementInfo storage arrangement = policy.arrangements[0];
-            ArrangementInfo memory arrangementToCheck = delegateGetArrangementInfo(
-                _testTarget, RESERVED_POLICY_ID, 0);
-            require(arrangementToCheck.node == arrangement.node &&
-                arrangementToCheck.indexOfDowntimePeriods == arrangement.indexOfDowntimePeriods &&
-                arrangementToCheck.lastRefundedPeriod == arrangement.lastRefundedPeriod);
-        }
-
-        NodeInfo storage nodeInfo = nodes[RESERVED_NODE];
-        MemoryNodeInfo memory nodeInfoToCheck = delegateGetNodeInfo(_testTarget, RESERVED_NODE);
-        require(nodeInfoToCheck.fee == nodeInfo.fee &&
-            nodeInfoToCheck.feeRate == nodeInfo.feeRate &&
-            nodeInfoToCheck.previousFeePeriod == nodeInfo.previousFeePeriod &&
-            nodeInfoToCheck.minFeeRate == nodeInfo.minFeeRate);
-
-        require(int256(delegateGet(_testTarget, this.getNodeFeeDelta.selector,
-            bytes32(bytes20(RESERVED_NODE)), bytes32(uint256(11)))) == nodeInfo.feeDelta[11]);
+        // no need to test verifyState because upgrade was enacted
     }
 
     /// @dev the `onlyWhileUpgrading` modifier works through a call to the parent `finishUpgrade`

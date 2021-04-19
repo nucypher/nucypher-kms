@@ -780,10 +780,6 @@ contract PolicyManager is Upgradeable {
         // TODO "virtual" only for tests, probably will be removed after #1512
         public view virtual returns (int256)
     {
-        // TODO remove after upgrade #2579
-        if (_node == RESERVED_NODE && _period == 11) {
-            return 55;
-        }
         return nodes[_node].feeDelta[_period];
     }
 

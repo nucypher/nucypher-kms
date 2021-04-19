@@ -45,7 +45,7 @@ interface WorkLockInterface {
 /**
 * @title StakingEscrowStub
 * @notice Stub is used to deploy main StakingEscrow after all other contract and make some variables immutable
-* @dev |v1.0.0|
+* @dev |v1.0.1|
 */
 contract StakingEscrowStub is Upgradeable {
     using AdditionalMath for uint32;
@@ -95,8 +95,7 @@ contract StakingEscrowStub is Upgradeable {
 
         // we have to use real values even though this is a stub
         require(address(delegateGet(_testTarget, this.token.selector)) == address(token));
-        // TODO uncomment after merging this PR #2579
-//        require(uint32(delegateGet(_testTarget, this.genesisSecondsPerPeriod.selector)) == genesisSecondsPerPeriod);
+        require(uint32(delegateGet(_testTarget, this.genesisSecondsPerPeriod.selector)) == genesisSecondsPerPeriod);
         require(uint32(delegateGet(_testTarget, this.secondsPerPeriod.selector)) == secondsPerPeriod);
         require(uint16(delegateGet(_testTarget, this.minLockedPeriods.selector)) == minLockedPeriods);
         require(delegateGet(_testTarget, this.minAllowableLockedTokens.selector) == minAllowableLockedTokens);
@@ -109,7 +108,7 @@ contract StakingEscrowStub is Upgradeable {
 * @title StakingEscrow
 * @notice Contract holds and locks stakers tokens.
 * Each staker that locks their tokens will receive some compensation
-* @dev |v5.7.1|
+* @dev |v5.7.2|
 */
 contract StakingEscrow is Issuer, IERC900History {
 
@@ -317,12 +316,7 @@ contract StakingEscrow is Issuer, IERC900History {
     address stub2; // former slot for Adjudicator
     address stub3; // former slot for WorkLock
 
-    mapping (uint16 => uint256) _lockedPerPeriod;
-    // only to make verifyState from previous version work, temporary
-    // TODO remove after upgrade #2579
-    function lockedPerPeriod(uint16 _period) public view returns (uint256) {
-        return _period != RESERVED_PERIOD ? _lockedPerPeriod[_period] : 111;
-    }
+    mapping (uint16 => uint256) public lockedPerPeriod;
 
     /**
     * @notice Constructor sets address of token contract and coefficients for minting
@@ -911,7 +905,7 @@ contract StakingEscrow is Issuer, IERC900History {
 
         // next period is committed
         if (info.nextCommittedPeriod == nextPeriod) {
-            _lockedPerPeriod[nextPeriod] += _value;
+            lockedPerPeriod[nextPeriod] += _value;
             emit CommitmentMade(_staker, nextPeriod, _value);
         }
 
@@ -1209,7 +1203,7 @@ contract StakingEscrow is Issuer, IERC900History {
 
         uint256 lockedTokens = getLockedTokens(info, currentPeriod, nextPeriod);
         require(lockedTokens > 0);
-        _lockedPerPeriod[nextPeriod] += lockedTokens;
+        lockedPerPeriod[nextPeriod] += lockedTokens;
 
         info.currentCommittedPeriod = info.nextCommittedPeriod;
         info.nextCommittedPeriod = nextPeriod;
@@ -1338,7 +1332,7 @@ contract StakingEscrow is Issuer, IERC900History {
             processedPeriod1 = info.currentCommittedPeriod;
             info.currentCommittedPeriod = 0;
             if (reStake) {
-                _lockedPerPeriod[info.nextCommittedPeriod] += reward;
+                lockedPerPeriod[info.nextCommittedPeriod] += reward;
             }
         }
         if (info.nextCommittedPeriod <= previousPeriod) {
@@ -1380,7 +1374,7 @@ contract StakingEscrow is Issuer, IERC900History {
                 uint256 subStakeReward = mint(
                     _currentPeriod,
                     subStake.lockedValue,
-                    _lockedPerPeriod[_mintingPeriod],
+                    lockedPerPeriod[_mintingPeriod],
                     lastPeriod.sub16(_mintingPeriod));
                 reward += subStakeReward;
                 if (_reStake) {
@@ -1560,12 +1554,12 @@ contract StakingEscrow is Issuer, IERC900History {
             if (_info.currentCommittedPeriod >= _decreasePeriod &&
                 _info.currentCommittedPeriod <= minSubStakeLastPeriod)
             {
-                _lockedPerPeriod[_info.currentCommittedPeriod] -= appliedPenalty;
+                lockedPerPeriod[_info.currentCommittedPeriod] -= appliedPenalty;
             }
             if (_info.nextCommittedPeriod >= _decreasePeriod &&
                 _info.nextCommittedPeriod <= minSubStakeLastPeriod)
             {
-                _lockedPerPeriod[_info.nextCommittedPeriod] -= appliedPenalty;
+                lockedPerPeriod[_info.nextCommittedPeriod] -= appliedPenalty;
             }
         }
     }
@@ -1768,7 +1762,7 @@ contract StakingEscrow is Issuer, IERC900History {
     function verifyState(address _testTarget) public override virtual {
         super.verifyState(_testTarget);
         require(delegateGet(_testTarget, this.lockedPerPeriod.selector,
-            bytes32(bytes2(RESERVED_PERIOD))) == lockedPerPeriod(RESERVED_PERIOD));
+            bytes32(bytes2(RESERVED_PERIOD))) == lockedPerPeriod[RESERVED_PERIOD]);
         require(address(delegateGet(_testTarget, this.stakerFromWorker.selector, bytes32(0))) ==
             stakerFromWorker[address(0)]);
 
@@ -1826,7 +1820,7 @@ contract StakingEscrow is Issuer, IERC900History {
     function finishUpgrade(address _target) public override virtual {
         super.finishUpgrade(_target);
         // Create fake period
-        _lockedPerPeriod[RESERVED_PERIOD] = 111;
+        lockedPerPeriod[RESERVED_PERIOD] = 111;
 
         // Create fake worker
         stakerFromWorker[address(0)] = address(this);
