@@ -243,4 +243,5 @@ class Amonia(Alice):
             like_a_map_but_awful.include_blockchain_signature(blockchain_signer=transacting_power.sign_message)
 
             # Sucker.
-            self.network_middleware.put_treasure_map_on_node(sucker_ursula, map_payload=bytes(like_a_map_but_awful))
+            response = self.network_middleware.put_treasure_map_on_node(sucker_ursula, map_payload=bytes(like_a_map_but_awful))
+            return response

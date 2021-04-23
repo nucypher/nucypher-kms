@@ -20,11 +20,11 @@ import datetime
 import maya
 import pytest
 
-from nucypher.characters.lawful import Ursula
 from nucypher.characters.unlawful import Amonia
 from nucypher.datastore.datastore import RecordNotFound
 from nucypher.datastore.queries import find_policy_arrangements
 from nucypher.network.middleware import RestMiddleware
+from nucypher.policy.policies import Policy
 
 
 def test_policy_simple_sinpa(blockchain_ursulas, blockchain_alice, blockchain_bob, agency, testerchain):
@@ -37,20 +37,19 @@ def test_policy_simple_sinpa(blockchain_ursulas, blockchain_alice, blockchain_bo
     policy_end_datetime = maya.now() + datetime.timedelta(days=35)
     label = b"this_is_the_path_to_which_access_is_being_granted"
 
-    with pytest.raises(Ursula.UnpaidPolicy):
+    with pytest.raises(Policy.Unpaid):
         _bupkiss_policy = amonia.grant_without_paying(bob=blockchain_bob,
                                                       label=label,
                                                       m=2,
                                                       n=n,
                                                       rate=int(1e18),  # one ether
-                                                      expiration=policy_end_datetime,
-                                                      publish_reasure_map=True)
+                                                      expiration=policy_end_datetime)
 
     for ursula in blockchain_ursulas:
         # Reset the Ursula for the next test.
         ursula.suspicious_activities_witnessed['freeriders'] = []
 
-        # TODO: Show that there is no KFrag available
+        # TODO: Show that there is no KFrag available to Bob
 
         # try:
         #     with ursula.datastore.query_by(PolicyArrangement, writeable=True) as arrangements:
@@ -151,7 +150,7 @@ def test_put_additional_treasure_map_on_network(blockchain_ursulas, blockchain_a
     # Setup the policy details
     n = 3
     policy_end_datetime = maya.now() + datetime.timedelta(days=35)
-    label = b"this_is_the_path_to_which_access_is_being_granted"
+    label = b"this_is_another_path_to_which_access_is_being_granted"
 
     policy = amonia.grant(bob=blockchain_bob,
                           label=label,
@@ -163,6 +162,5 @@ def test_put_additional_treasure_map_on_network(blockchain_ursulas, blockchain_a
 
     # This should 409 because Ursula won't be able to find an HRAC on-chain
     # with the modified HRAC.
-    with pytest.raises(RestMiddleware.UnexpectedResponse) as should_409:
-        amonia.use_ursula_as_an_involuntary_and_unbeknownst_cdn(policy, blockchain_bob, sucker_ursula=blockchain_ursulas[0])
-    assert should_409.value.status == 409
+    response = amonia.use_ursula_as_an_involuntary_and_unbeknownst_cdn(policy, blockchain_bob, sucker_ursula=blockchain_ursulas[0])
+    assert response.status_code == 402

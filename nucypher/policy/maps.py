@@ -19,7 +19,8 @@ along with nucypher.  If not, see <https://www.gnu.org/licenses/>.
 from bytestring_splitter import (
     BytestringSplitter,
     VariableLengthBytestring,
-    BytestringKwargifier
+    BytestringKwargifier,
+    BytestringSplittingError
 )
 from constant_sorrow.constants import NO_DECRYPTION_PERFORMED, NOT_SIGNED
 from eth_utils.address import to_checksum_address, to_canonical_address
@@ -93,7 +94,6 @@ class TreasureMap:
             self._set_id()
         else:
             self.message_kit = None
-
 
     def __eq__(self, other):
         try:
@@ -221,8 +221,8 @@ class TreasureMap:
         # Encrypt this kfrag payload for Ursula.
         kfrag_payload = self._make_kfrag_payload(kfrag=kfrag, alice_stamp=alice_stamp)
         encrypted_kfrag, _signature = encrypt_and_sign(recipient_pubkey_enc=ursula.public_keys(DecryptingPower),
-                                                               plaintext=kfrag_payload,
-                                                               signer=alice_stamp)
+                                                       plaintext=kfrag_payload,
+                                                       signer=alice_stamp)
 
         # Set the encrypted kfrag payload into the map.
         self.destinations[ursula.checksum_address] = encrypted_kfrag
@@ -252,11 +252,13 @@ class TreasureMap:
             map_in_the_clear = compass(message_kit=self.message_kit)
         except Character.InvalidSignature:
             raise self.InvalidSignature("This TreasureMap does not contain the correct signature from Alice to Bob.")
-        else:
-            self._m = map_in_the_clear[0]
+        self._m = map_in_the_clear[0]
+        try:
             ursula_and_kfrags = self.ursula_and_kfrag_payload_splitter.repeat(map_in_the_clear[1:])
-            self._destinations = {u: k for u, k in ursula_and_kfrags}
-            self.check_for_sufficient_destinations()  # TODO: Remove this check, how is this even possible?
+        except BytestringSplittingError:
+            raise self.IsDisorienting('Invalid treasure map contents.')
+        self._destinations = {u: k for u, k in ursula_and_kfrags}
+        self.check_for_sufficient_destinations()  # TODO: Remove this check, how is this even possible?
 
     def check_for_sufficient_destinations(self):
         if len(self._destinations) < self._m or self._m == 0:

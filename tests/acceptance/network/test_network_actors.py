@@ -187,7 +187,7 @@ def test_treasure_map_cannot_be_duplicated_again(blockchain_ursulas,
 
     ursulas_who_probably_do_not_have_the_map = [u for u in blockchain_ursulas if not u in matching_ursulas]
     node_on_which_to_store_bad_map = ursulas_who_probably_do_not_have_the_map[0]
-    with pytest.raises(vladimir.network_middleware.UnexpectedResponse) as e:
-        vladimir.publish_fraudulent_treasure_map(legit_treasure_map=policy.treasure_map,
-                                                 target_node=node_on_which_to_store_bad_map)
-    assert e.value.status == 402
+    # with pytest.raises(vladimir.network_middleware.UnexpectedResponse) as e:
+    response = vladimir.publish_fraudulent_treasure_map(legit_treasure_map=policy.treasure_map,
+                                                        target_node=node_on_which_to_store_bad_map)
+    assert response.status_code == 402  # Payment required

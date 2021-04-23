@@ -43,7 +43,6 @@ from nucypher.datastore.models import Workorder as WorkOrderModel
 from nucypher.network import LEARNING_LOOP_VERSION
 from nucypher.network.exceptions import NodeSeemsToBeDown
 from nucypher.network.protocols import InterfaceInfo
-from nucypher.policy.policies import Policy
 from nucypher.utilities.logging import Logger
 
 HERE = BASE_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -108,6 +107,7 @@ def _make_rest_app(datastore: Datastore, this_node, domain: str, log: Logger) ->
     from nucypher.policy.orders import WorkOrder
     from nucypher.characters.lawful import Alice, Bob, Ursula
     from nucypher.policy.policies import Arrangement
+    from nucypher.policy.policies import Policy
 
     _alice_class = Alice
     _bob_class = Bob
