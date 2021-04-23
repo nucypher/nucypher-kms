@@ -40,7 +40,13 @@ from umbral.signing import Signature
 
 class TreasureMap:
 
-    version = bytes.fromhex('42')  # TODO: Versioning
+    VERSION_NUMBER = 2  # Increment when serialization format changes.
+
+    _DELIMITER = b':'
+    _PREFIX = b'TM' + _DELIMITER
+    _VERSION = int(VERSION_NUMBER).to_bytes(1, 'big')
+    _HEADER = _PREFIX + _VERSION
+    _HEADER_SIZE = len(_HEADER)
 
     class NowhereToBeFound(RestMiddleware.NotFound):
         """
@@ -52,6 +58,9 @@ class TreasureMap:
         Called when an oriented TreasureMap lists fewer than m destinations, which
         leaves Bob disoriented.
         """
+
+    class OldVersion(Exception):
+        """Raised when a treasure map's version is too old or contents are incompatible."""
 
     ursula_and_kfrag_payload_splitter = BytestringSplitter(
         (to_checksum_address, ETH_ADDRESS_BYTE_LENGTH),
@@ -67,7 +76,8 @@ class TreasureMap:
                  message_kit: UmbralMessageKit = None,
                  public_signature: Signature = None,
                  hrac: Optional[bytes] = None,
-                 version: bytes = None) -> None:
+                 version: bytes = None
+                 ) -> None:
 
         if version is not None:
             self.version = version
@@ -118,13 +128,31 @@ class TreasureMap:
     @classmethod
     def splitter(cls):
         return BytestringKwargifier(cls,
-                                    version=(bytes, 1),
+                                    version=(bytes, cls._HEADER_SIZE),
                                     public_signature=Signature,
                                     hrac=(bytes, HRAC_LENGTH),
                                     message_kit=(UmbralMessageKit, VariableLengthBytestring))
 
     @classmethod
+    def _check_version(cls, bytes_representation: bytes) -> None:
+        """
+        Takes a bytes representation of a treasure map and raises OldVersion
+        error is the version is incompatible or ValueError if the header is malformed.
+        """
+        header = bytes_representation[:cls._HEADER_SIZE]
+        if header != cls._HEADER:
+            if bytes_representation[:len(cls._PREFIX)] != cls._PREFIX:
+                # This either is not a treasure map, or predates versioning.
+                raise ValueError('Invalid treasure map header.')
+            try:
+                prefix, version = header.split(cls._DELIMITER)
+            except ValueError:
+                raise ValueError('Invalid treasure map header.')
+            raise cls.OldVersion(f'Treasure map is an old version ({version} but the latest version is {cls.VERSION_NUMBER}')
+
+    @classmethod
     def from_bytes(cls, bytes_representation: bytes, verify: bool = True) -> Union['TreasureMap', 'SignedTreasureMap']:
+        cls._check_version(bytes_representation=bytes_representation)
         splitter = cls.splitter()
         treasure_map = splitter(bytes_representation)
         if verify:
@@ -151,10 +179,10 @@ class TreasureMap:
         self._id = keccak_digest(bytes(self._verifying_key) + bytes(self._hrac)).hex()
 
     def _set_payload(self) -> None:
-        self._payload = self.version             \
-                        + self._public_signature \
-                        + self._hrac             \
-                        + bytes(VariableLengthBytestring(self.message_kit.to_bytes()))
+        self._payload = self._HEADER  \
+            + self._public_signature  \
+            + self._hrac              \
+            + bytes(VariableLengthBytestring(self.message_kit.to_bytes()))
 
     def derive_hrac(self, alice_stamp: SignatureStamp, bob_verifying_key: UmbralPublicKey, label: bytes) -> None:
         """
@@ -277,7 +305,7 @@ class SignedTreasureMap(TreasureMap):
     @classmethod
     def splitter(cls):
         return BytestringKwargifier(cls,
-                                    version=(bytes, 1),
+                                    version=(bytes, len(cls._PREFIX)),
                                     public_signature=Signature,
                                     hrac=(bytes, HRAC_LENGTH),
                                     message_kit=(UmbralMessageKit, VariableLengthBytestring),
