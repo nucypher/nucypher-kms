@@ -84,6 +84,10 @@ workers can use, a software based wallet is the easiest.
 
         geth account new
 
+    - Never share your ethereum account password.
+    - Do not forget your ethereum account password.
+    - Secure your ethereum account password in a password manager.
+
 
 3. Run Worker
 -------------
@@ -122,7 +126,7 @@ Export Worker Environment Variables
 
 .. code:: bash
 
-    # Passwords are used for both creation and unlocking
+    # Passwords used for both creation and unlocking
     export NUCYPHER_KEYRING_PASSWORD=<YOUR KEYRING_PASSWORD>
     export NUCYPHER_WORKER_ETH_PASSWORD=<YOUR WORKER ETH ACCOUNT PASSWORD>
 
@@ -131,17 +135,17 @@ Initialize a new Worker
 
 .. code:: bash
 
-    docker run -it --rm \
-    --name ursula       \
+    docker run -it --rm  \
+    --name ursula        \
     -v ~/.local/share/nucypher:/root/.local/share/nucypher \
-    -v ~/.ethereum/:/root/.ethereum \
-    -p 9151:9151                    \
-    -e NUCYPHER_KEYRING_PASSWORD    \
-    nucypher/nucypher:latest        \
-    nucypher ursula init            \
-    --provider <PROVIDER URI>       \
-    --network <NETWORK NAME>        \
-    --signer <SIGNER URI>           \
+    -v ~/.ethereum/:/root/.ethereum               \
+    -p 9151:9151                                  \
+    -e NUCYPHER_KEYRING_PASSWORD                  \
+    nucypher/nucypher:latest                      \
+    nucypher ursula init                          \
+    --signer keystore:///root/.ethereum/keystore  \
+    --provider <PROVIDER URI>                     \
+    --network <NETWORK NAME>                      \
     --max-gas-price <GWEI>
 
 
@@ -149,7 +153,6 @@ Replace the following values with your own:
 
    * ``<PROVIDER URI>`` - The URI of a local or hosted ethereum node
    * ``<NETWORK NAME>`` - The name of a nucypher network (mainnet, ibex, or lynx)
-   * ``<SIGNER URI>`` - The URI to an ethereum keystore or signer: `keystore:///root/.ethereum/keystore`
    * ``<GWEI>`` - The maximum price of gas to spend on commitment transactions
 
 
