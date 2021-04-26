@@ -459,11 +459,34 @@ View logs for a CLI-launched or systemd Ursula:
     journalctl -f -t ursula
 
 
-Status Webpage
-^^^^^^^^^^^^^^
+Node Status Webpage
+^^^^^^^^^^^^^^^^^^^
 
 Once Ursula is running, you can view its public status page at ``https://<node_ip>:9151/status``.
-It should eventually be listed on the `Status Monitor Page <https://status.nucypher.network>`_ (this can take a few minutes).
+
+.. image:: ../.static/img/Annotated-Ursula-Status-Webpage-v1.png
+    :target: ../.static/img/Annotated-Ursula-Status-Webpage-v1.png
+
+- *Nickname Icon* - A visual representation of the node's nickname words and colors
+- *Staker Nickname* - A nickname/codename for the node derived from the staker address
+- *Staker Address* - The Staker address this node is bonded to
+- *Client Version* - The version of nucypher this node is running
+- *Network Name* - The nucypher network name this node is running (mainnet, lynx, or ibex).
+- *Peer Count* - The total number of peers this node had discovered.
+- *Fleet State Checksum* - A checksum representing the currently known peer constituents and quantity
+- *Fleet State Icon* - A visual representation of the fleet state's checksum word and color
+- *Fleet State History* - The most recent historical fleet states known by this node
+- *Peer Nickname* - The nickname of a peer derived from it's staker address
+- *Peer Fleet State* - The current fleet state of a peer node
+- *Peer Staker Address* - The staker address of a peer
+- *Verified Nodes* - The collection of nodes that have been connected to and validated by this node
+- *Unverified Nodes* - The collection of nodes that have not been contacted or validated by this node
+
+
+Network Status Webpage
+^^^^^^^^^^^^^^^^^^^^^^
+
+Your node will eventually be listed on the `Status Monitor Page <https://status.nucypher.network>`_ (this can take some time).
 
 
 Prometheus Endpoint
