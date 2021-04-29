@@ -1589,57 +1589,7 @@ contract StakingEscrowOld is IssuerOld, IERC900History {
     }
 
     //------------------------Upgradeable------------------------
-    /**
-    * @dev Get StakerInfo structure by delegatecall
-    */
-    function delegateGetStakerInfo(address _target, bytes32 _staker)
-        internal returns (StakerInfo memory result)
-    {
-        bytes32 memoryAddress = delegateGetData(_target, this.stakerInfo.selector, 1, _staker, 0);
-        assembly {
-            result := memoryAddress
-        }
-    }
+    
+    // no need to test verifyState because upgrade was enacted
 
-    /**
-    * @dev Get SubStakeInfo structure by delegatecall
-    */
-    function delegateGetSubStakeInfo(address _target, bytes32 _staker, uint256 _index)
-        internal returns (SubStakeInfo memory result)
-    {
-        bytes32 memoryAddress = delegateGetData(
-            _target, this.getSubStakeInfo.selector, 2, _staker, bytes32(_index));
-        assembly {
-            result := memoryAddress
-        }
-    }
-
-    /**
-    * @dev Get Downtime structure by delegatecall
-    */
-    function delegateGetPastDowntime(address _target, bytes32 _staker, uint256 _index)
-        internal returns (Downtime memory result)
-    {
-        bytes32 memoryAddress = delegateGetData(
-            _target, this.getPastDowntime.selector, 2, _staker, bytes32(_index));
-        assembly {
-            result := memoryAddress
-        }
-    }
-
-    /// @dev the `onlyWhileUpgrading` modifier works through a call to the parent `verifyState`
-    function verifyState(address _testTarget) public override virtual {
-        super.verifyState(_testTarget);
-        // no need to test verifyState because upgrade was enacted
-    }
-
-    /// @dev the `onlyWhileUpgrading` modifier works through a call to the parent `finishUpgrade`
-    function finishUpgrade(address _target) public override virtual {
-        super.finishUpgrade(_target);
-        // Create fake period
-        lockedPerPeriod[RESERVED_PERIOD] = 111;
-
-        // Create fake worker
-        stakerFromWorker[address(0)] = address(this);
-    }
 }
