@@ -938,6 +938,7 @@ class Bob(Character):
                 #  - This line is unreachable when NotEnoughUrsulas
 
             for message in message_kits:
+                # DECRYPT HAPPENS HERE
                 delivered_cleartext = self.verify_from(message.sender, message, decrypt=True)
                 cleartexts.append(delivered_cleartext)
         finally:

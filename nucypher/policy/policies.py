@@ -366,25 +366,13 @@ class Policy(ABC):
                            network_middleware: RestMiddleware,
                            arrangements: Dict['Ursula', Arrangement],
                            ) -> 'TreasureMap':
-        """Creates a treasure map for given arrangements."""
-
-        # TreasureMap (federated) or SignerTreasureMap (decentralized)
-        treasure_map = self._treasure_map_class(m=self.m)
-
-        # The HRAC is needed to produce kfrag writs.
-        treasure_map.derive_hrac(alice_stamp=self.alice.stamp,
-                                 bob_verifying_key=self.bob.public_keys(SigningPower),
-                                 label=self.label)
-
-        # Encrypt each kfrag for an Ursula.
-        for ursula, kfrag in zip(arrangements, self.kfrags):
-            treasure_map.add_kfrag(ursula=ursula,
-                                   kfrag=kfrag,
-                                   alice_stamp=self.alice.stamp)
-
-        # Sign the map if needed before sending it out into the world.
-        treasure_map.prepare_for_publication(bob_encrypting_key=self.bob.public_keys(DecryptingPower),
-                                             alice_stamp=self.alice.stamp)
+        """Author a new treasure map for this policy as Alice.."""
+        treasure_map = self._treasure_map_class.author(alice=self.alice,
+                                                       bob=self.bob,
+                                                       label=self.label,
+                                                       ursulas=list(arrangements),
+                                                       kfrags=self.kfrags,
+                                                       m=self.m)
         return treasure_map
 
     def _make_publisher(self,

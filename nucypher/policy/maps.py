@@ -24,14 +24,15 @@ from bytestring_splitter import (
 )
 from constant_sorrow.constants import NO_DECRYPTION_PERFORMED, NOT_SIGNED
 from eth_utils.address import to_checksum_address, to_canonical_address
-from typing import Optional, Callable, Union
+from typing import Optional, Callable, Union, Sequence
+from umbral.kfrags import KFrag
 
 from nucypher.blockchain.eth.constants import ETH_ADDRESS_BYTE_LENGTH
 from nucypher.characters.base import Character
 from nucypher.crypto.api import encrypt_and_sign, keccak_digest, verify_eip_191
 from nucypher.crypto.constants import HRAC_LENGTH, WRIT_CHECKSUM_SIZE
 from nucypher.crypto.kits import UmbralMessageKit
-from nucypher.crypto.powers import DecryptingPower
+from nucypher.crypto.powers import DecryptingPower, SigningPower
 from nucypher.crypto.signing import SignatureStamp
 from nucypher.network.middleware import RestMiddleware
 from umbral.keys import UmbralPublicKey
@@ -109,16 +110,13 @@ class TreasureMap:
         try:
             return self.public_id() == other.public_id()
         except AttributeError:
-            raise TypeError(f"Can't compare {other} to a TreasureMap (it needs to implement public_id() )")
+            raise TypeError(f"Can't compare {type(other).__name__} to a TreasureMap (it needs to implement public_id() )")
 
     def __iter__(self):
         return iter(self.destinations.items())
 
     def __len__(self):
         return len(self.destinations)
-
-    def __repr__(self):
-        return f"{self.__class__.__name__}:{self.public_id()[:6]}"
 
     def __bytes__(self):
         if self._payload is None:
@@ -294,6 +292,34 @@ class TreasureMap:
                 f"TreasureMap lists only {len(self._destinations)} destination, "
                 f"but requires interaction with {self._m} nodes.")
 
+    @classmethod
+    def author(cls,
+               alice: 'Alice',
+               bob: 'Bob',
+               label: bytes,
+               ursulas: Sequence['Ursula'],
+               kfrags: Sequence[KFrag],
+               m: int
+               ) -> 'TreasureMap':
+        """Create a new treasure map for a collection of ursulas and kfrags."""
+
+        # The HRAC is needed to produce kfrag writs.
+        treasure_map = cls(m=m)
+        treasure_map.derive_hrac(alice_stamp=alice.stamp,
+                                 bob_verifying_key=bob.public_keys(SigningPower),
+                                 label=label)
+
+        # Encrypt each kfrag for an Ursula.
+        for ursula, kfrag in zip(ursulas, kfrags):
+            treasure_map.add_kfrag(ursula=ursula,
+                                   kfrag=kfrag,
+                                   alice_stamp=alice.stamp)
+
+        # Sign the map if needed before sending it out into the world.
+        treasure_map.prepare_for_publication(bob_encrypting_key=bob.public_keys(DecryptingPower),
+                                             alice_stamp=alice.stamp)
+
+        return treasure_map
 
 
 class SignedTreasureMap(TreasureMap):
