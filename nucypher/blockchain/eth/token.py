@@ -29,7 +29,7 @@ from constant_sorrow.constants import (
     NEW_STAKE,
     NOT_STAKING,
 )
-from eth_utils import currency, is_checksum_address
+from eth_utils import currency
 from hexbytes.main import HexBytes
 from twisted.internet import reactor, task
 from web3.exceptions import TransactionNotFound
@@ -558,7 +558,7 @@ class WorkTracker:
         self._tracking_task.clock = self.CLOCK
 
         self.__pending = dict()  # TODO: Prime with pending worker transactions
-        self.__has_untracked_tx = False
+        self.__num_dropped_txs = 0
         self.__requirement = None
         self.__current_period = None
         self.__start_time = NOT_STAKING
@@ -661,15 +661,16 @@ class WorkTracker:
             return False
         else:
             # Note: mempool has limit on the number on TXs, and may drop them resulting in missing pending TXs
-            self.log.info('Pending commitment transaction has been dropped from mempool.')
             # TODO: Detect if this untracked pending transaction is a commitment transaction at all.
-            self.__has_untracked_tx = True
-            return False
+            self.__num_dropped_txs = len(self.__pending) - txs_in_mempool
+            s = "s" if self.__num_dropped_txs > 1 else ""
+            self.log.info(f'{self.__num_dropped_txs} pending commitment transaction{s} have been dropped from mempool.')
+            return True
 
     def __track_pending_commitments(self) -> bool:
         # TODO: Keep a purpose-built persistent log of worker transaction history
 
-        unmined_transactions = 1 if self.__has_untracked_tx else 0
+        unmined_transactions = self.__num_dropped_txs
         pending_transactions = self.pending.items()    # note: this must be performed non-mutatively
         for tx_firing_block_number, txhash in sorted(pending_transactions):
             try:
@@ -699,7 +700,7 @@ class WorkTracker:
         del self.__pending[tx_firing_block_number]  # assume our original TX is stuck
 
     def __handle_replacement_commitment(self, current_block_number: int) -> None:
-        if self.__has_untracked_tx:
+        if self.__num_dropped_txs:
             # TODO: Detect if this untracked pending transaction is a commitment transaction at all.
             message = f"We have an untracked pending transaction. Issuing a replacement transaction."
             tx_firing_block_number = 0
