@@ -26,14 +26,15 @@ from hexbytes import HexBytes
 from toolz.dicttoolz import dissoc
 from trezorlib import ethereum
 from trezorlib.client import get_default_client, TrezorClient
-from trezorlib.tools import parse_path, Address, H_
+from trezorlib.tools import parse_path, H_
 from trezorlib.transport import TransportException
-from typing import List, Tuple, Union
+from typing import List, Tuple, Union, Optional
 from web3 import Web3
 
 from nucypher.blockchain.eth.decorators import validate_checksum_address
 from nucypher.blockchain.eth.signers.base import Signer
 from nucypher.characters.control.emitters import StdoutEmitter
+from urllib.parse import urlparse
 
 
 def handle_trezor_call(device_func):
@@ -81,12 +82,12 @@ class TrezorSigner(Signer):
     class NoDeviceDetected(DeviceError):
         """Raised when an operation requires a device but none are available"""
 
-    def __init__(self, testnet: bool = False):
+    def __init__(self, testnet: bool = False, paths: Optional[List[List[H_]]] = None):
         self.__client = self._open()
         self._device_id = self.__client.get_device_id()
-        self.testnet = testnet     # SLIP44 testnet support for EIP-155 sigatures
+        self.testnet = testnet     # SLIP44 testnet support for EIP-155 signatures
         self.__addresses = dict()  # track derived addresses
-        self.__cache_addresses()
+        self.__cache_addresses(paths=paths)
 
     @property
     def derivation_root(self) -> str:
@@ -127,7 +128,7 @@ class TrezorSigner(Signer):
         return hd_path
 
     @handle_trezor_call
-    def __derive_account(self, index: int = None, hd_path: Address = None) -> str:
+    def __derive_account(self, index: int = None, hd_path: List[H_] = None) -> str:
         """Resolves a trezorlib HD path into a checksum address and returns it."""
         if not hd_path:
             if index is None:
@@ -136,18 +137,27 @@ class TrezorSigner(Signer):
         address = ethereum.get_address(client=self.__client, n=hd_path, show_display=False)  # TODO: show display?
         return address
 
-    def __cache_addresses(self) -> None:
+    def __cache_addresses(self, paths: Optional[List[List[H_]]] = None) -> None:
         """
         Derives trezor ethereum addresses up to ADDRESS_CACHE_SIZE relative to
         the calculated base path and internally caches them for later use.
+
+        If paths are provided, only those addresses wil be derived.
         """
         emitter = StdoutEmitter()
-        for index in range(self.ADDRESS_CACHE_SIZE):
-            hd_path = self.__get_address_path(index=index)
-            address = self.__derive_account(hd_path=hd_path)
-            self.__addresses[address] = hd_path
-            message = f"Derived {address} ({self.derivation_root}/{index})"
-            emitter.message(message)
+        if paths:
+            for hd_path in paths:
+                address = self.__derive_account(hd_path=hd_path)
+                self.__addresses[address] = hd_path
+                message = f"Derived {address}"
+                emitter.message(message)
+        else:
+            for index in range(self.ADDRESS_CACHE_SIZE):
+                hd_path = self.__get_address_path(index=index)
+                address = self.__derive_account(hd_path=hd_path)
+                self.__addresses[address] = hd_path
+                message = f"Derived {address} ({self.derivation_root}/{index})"
+                emitter.message(message)
 
     @staticmethod
     def _format_transaction(transaction_dict: dict) -> dict:
@@ -171,11 +181,43 @@ class TrezorSigner(Signer):
     #
 
     @classmethod
+    def __parse_hd_path(cls, uri_breakdown) -> List[H_]:
+        path = uri_breakdown.path.lstrip('/')
+        path_breakdown = path.split('/')
+        if len(path_breakdown) < 5:
+            raise cls.SignerError(f'{uri_breakdown.path} is not a complete HD path.')
+        try:
+            if int(path_breakdown[0]) != cls.__BIP_44:
+                raise cls.SignerError(f'{uri_breakdown.path} is not a BIP44 HD path.')
+            if int(path_breakdown[1]) not in (cls.__ETH_COIN_TYPE, cls.__TESTNET_COIN_TYPE):
+                raise cls.SignerError(f'{uri_breakdown.path} is not a valid ethereum HD path.')
+        except TypeError:
+            raise cls.SignerError(f'{uri_breakdown.path} is not a valid HD path.')
+        p = path_breakdown
+        branch = '/'.join(path_breakdown[3:])
+        bip32_path = f"{p[0]}'/{p[1]}'/{p[2]}'/{branch}"
+        try:
+            hd_path = parse_path(nstr=bip32_path)
+        except ValueError as e:
+            raise cls.SignerError(e) from e
+        return hd_path
+
+    @classmethod
     def from_signer_uri(cls, uri: str, testnet: bool = False) -> 'TrezorSigner':
         """Return a trezor signer from URI string i.e. trezor:///my/trezor/path """
-        if uri != cls.uri_scheme():  # TODO: #2269 Support "rich URIs" for trezors
-            raise cls.InvalidSignerURI(f'{uri} is not a valid trezor URI scheme')
-        return cls(testnet=testnet)
+        if uri == cls.uri_scheme():
+            return cls(testnet=testnet)
+        uri_breakdown = urlparse(uri)
+        valid_uri = any((uri_breakdown.scheme == cls.uri_scheme(),
+                         not uri_breakdown.netloc,
+                         not uri_breakdown.params,
+                         not uri_breakdown.query,
+                         not uri_breakdown.fragment,
+                         uri_breakdown.path))
+        if not valid_uri:
+            raise cls.InvalidSignerURI(f'{uri} is not a valid trezor URI')
+        hd_path = cls.__parse_hd_path(uri_breakdown=uri_breakdown)
+        return cls(testnet=testnet, paths=[hd_path])
 
     def is_device(self, account: str) -> bool:
         """Trezor is always a device."""
@@ -257,7 +299,10 @@ class TrezorSigner(Signer):
         # https://github.com/trezor/trezor-firmware/issues/1050#issuecomment-640718622
         hd_path = self.__get_address_path(checksum_address=sender_address)  # from cache
 
-        # Trezor signing request
+        # Handle contract creation transaction formatting.
+        if trezor_transaction['to'] == b'':
+            trezor_transaction['to'] = ''
+
         _v, _r, _s = self.__sign_transaction(n=hd_path, trezor_transaction=trezor_transaction)
 
         # Create RLP serializable Transaction instance with eth_account
@@ -265,8 +310,9 @@ class TrezorSigner(Signer):
         transaction_dict = dissoc(transaction_dict, 'chainId')
 
         # 'to' may be blank if this transaction is contract creation
-        formatters = {'to': to_canonical_address}
-        transaction_dict = dict(apply_formatters_to_dict(formatters, transaction_dict))
+        if transaction_dict['to']:
+            formatters = {'to': to_canonical_address}
+            transaction_dict = dict(apply_formatters_to_dict(formatters, transaction_dict))
 
         signed_transaction = Transaction(v=to_int(_v),  # type: int
                                          r=to_int(_r),  # bytes -> int
