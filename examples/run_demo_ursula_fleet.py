@@ -16,11 +16,9 @@
 """
 
 import os
-from contextlib import suppress
+import shutil
 from functools import partial
 from pathlib import Path
-
-from twisted.internet import reactor
 
 from nucypher.characters.lawful import Ursula
 from nucypher.config.constants import APP_DIR, TEMPORARY_DOMAIN
@@ -28,6 +26,7 @@ from nucypher.utilities.networking import LOOPBACK_ADDRESS
 
 FLEET_POPULATION = 12
 DEMO_NODE_STARTING_PORT = 11500
+USER_CACHE = Path(APP_DIR.user_cache_dir)
 
 ursula_maker = partial(Ursula, rest_host=LOOPBACK_ADDRESS,
                        federated_only=True,
@@ -38,7 +37,7 @@ def spin_up_federated_ursulas(quantity: int = FLEET_POPULATION):
     # Ports
     starting_port = DEMO_NODE_STARTING_PORT
     ports = list(map(str, range(starting_port, starting_port + quantity)))
-    sage_dir = str(Path(APP_DIR.user_cache_dir) / 'sage.db')
+    sage_dir = str(USER_CACHE / 'sage.db')
     ursulas = []
 
     if not os.path.exists(sage_dir):
@@ -52,23 +51,29 @@ def spin_up_federated_ursulas(quantity: int = FLEET_POPULATION):
             rest_port=port,
             seed_nodes=[sage.seed_node_metadata()],
             start_learning_now=True,
-            db_filepath=f"{Path(APP_DIR.user_cache_dir) / port}.db",
+            db_filepath=f"{USER_CACHE / port}.db",
         )
         ursulas.append(u)
+
     for u in ursulas:
         deployer = u.get_deployer()
         deployer.addServices()
         deployer.catalogServers(deployer.hendrix)
         deployer.start()
         print(f"{u}: {deployer._listening_message()}")
+
     try:
-        reactor.run()  # GO!
+        while True:
+            input("'Ctl + C' to quit\r\n")
     finally:
-        with suppress(FileNotFoundError):
-            os.remove("sage.db")
-        for u in ursulas[1:]:
-            with suppress(FileNotFoundError):
-                os.remove(f"{u.rest_interface.port}.db")
+        last_u = None
+        for u in ursulas:
+            shutil.rmtree(u.datastore.db_path)
+            last_u = u
+
+        # This kills the whole process.
+        # TODO: Is there a graceful way to shut each Ursula down?
+        last_u.get_deployer().stop()
 
 
 if __name__ == "__main__":
