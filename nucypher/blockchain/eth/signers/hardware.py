@@ -20,15 +20,17 @@ import rlp
 from eth_account._utils.transactions import assert_valid_fields, Transaction
 from eth_utils.address import to_canonical_address
 from eth_utils.applicators import apply_key_map, apply_formatters_to_dict
-from eth_utils.conversions import to_int
+from eth_utils.conversions import decode_hex, to_int
 from functools import wraps
 from hexbytes import HexBytes
+from ledgereth import Transaction as LedgerTransaction, get_account_by_path as ledger_get_account_by_path, sign_transaction as ledger_sign_transaction
 from toolz.dicttoolz import dissoc
 from trezorlib import ethereum
 from trezorlib.client import get_default_client, TrezorClient
 from trezorlib.tools import parse_path, Address, H_
 from trezorlib.transport import TransportException
 from typing import List, Tuple, Union
+from urllib.parse import urlparse, parse_qsl
 from web3 import Web3
 
 from nucypher.blockchain.eth.decorators import validate_checksum_address
@@ -277,3 +279,194 @@ class TrezorSigner(Signer):
         if rlp_encoded:
             signed_transaction = HexBytes(rlp.encode(signed_transaction))
         return signed_transaction
+
+
+class HardwareSigner(Signer):
+    """
+    Common base class mixin for hardware wallets in general
+    """
+    def is_device(self, account: str) -> bool:
+        """Ledger is always a device."""
+        return True
+
+    @validate_checksum_address
+    def unlock_account(self, account: str, password: str, duration: int = None) -> bool:
+        """Defer account unlocking to the ledger, do not indicate application level unlocking logic."""
+        return True
+
+    @validate_checksum_address
+    def lock_account(self, account: str) -> bool:
+        """Defer account locking to the ledger, do not indicate application level unlocking logic."""
+        return True
+
+
+# Fixup path regex in ledgereth to allow test derivation paths
+import ledgereth.utils
+ledgereth.utils.BIP32_ETH_PATTERN = r"^44'/(1|60)'/[0-9]+'(/[0-9]+){2}$"
+ledgereth.utils.BIP32_LEGACY_LEDGER_PATTERN = r"^44'/(1|60)'/[0-9]+'/[0-9]+$"
+
+
+class LedgerSigner(HardwareSigner):
+    """A ledger message and transaction signing client."""
+
+    __BIP44_TEST = "44'/1'/"
+    __BIP44_ETH = "44'/60'/"
+    __CHAIN_ID_MAINNET = 1
+    __CHAIN_ID_ROPSTEN = 3
+    __CHAIN_ID_RINKEBY = 4
+    __CHAIN_ID_GOERLI = 5
+    __CHAIN_ID_KOVAN = 42
+
+    def __init__(self, testnet: bool = False, count: int = 1, legacy: bool = False, path: str = None):
+        self.__addresses = dict()
+        self.__testnet = testnet
+
+        emitter = StdoutEmitter()
+        paths = (path,) if path else self.__get_paths(testnet, count, legacy)
+
+        for item in paths:
+            acct = ledger_get_account_by_path(item)
+            self.__addresses[acct.address] = acct
+            if testnet and acct.path.startswith(self.__BIP44_ETH):
+                raise self.SignerError(f'cannot use production path/account in testnet: {acct.path}/{acct.address}')
+            if not testnet and acct.path.startswith(self.__BIP44_TEST):
+                raise self.SignerError(f'cannot use testnet path/account in production: {acct.path}/{acct.address}')
+            emitter.message(f"Derived {acct.address} ({acct.path})")
+
+    @classmethod
+    def uri_scheme(cls) -> str:
+        return 'ledger'
+
+    #
+    # Internal
+    #
+
+    @classmethod
+    def __get_paths(cls, testnet: bool, count: int, legacy: bool):
+        head = cls.__BIP44_TEST if testnet else cls.__BIP44_ETH
+        tail = "0'/{idx:}" if legacy else "{idx:}'/0/0"
+        path = head + tail
+        return tuple(path.format(idx=i) for i in range(count))
+
+    #
+    # Ledger Signer API
+    #
+
+    @classmethod
+    def from_signer_uri(cls, uri: str, testnet: bool = False) -> 'TrezorSigner':
+        """
+        Return a ledger signer from URI string (ledger:[path]?count=N&legacy)
+
+        - For the first account using the current ledger live derivation path:
+            "ledger"                    "ledger:///"
+            "ledger:"                   "ledger?legacy=0"
+            "ledger:/"                  "ledger?legacy=no"
+            "ledger://"                 "ledger?legacy=false"
+
+        - For the first account using the legacy ledger derivation path:
+            "ledger?legacy"             "ledger:///?legacy"
+            "ledger:?legacy"            "ledger?legacy=1"
+            "ledger:/?legacy"           "ledger?legacy=yes"
+            "ledger://?legacy"          "ledger?legacy=true"
+
+        - For additional accounts, specify count as well:
+            "ledger:?count=N"           "ledger:?count=N&legacy"
+
+        - You can also specify an explicit path (leading slashes are stripped):
+            "ledger:44'/60'/99'/0/0"    "ledger:/44'/1'/99'/0"
+        """
+        decoded_uri = urlparse(uri)
+
+        scheme = decoded_uri.scheme
+        path = decoded_uri.netloc + decoded_uri.path
+        path = path.lstrip('/')
+
+        if not scheme:
+            scheme = path
+            path = None
+
+        if scheme != cls.uri_scheme():
+            raise cls.InvalidSignerURI(f'{uri} is not a valid ledger URI')
+
+        legacy = False
+        count = 1
+
+        if not path:
+            for key, val in parse_qsl(decoded_uri.query, keep_blank_values=True):
+                if key == 'legacy':
+                    if val.lower() in ('0', 'n', 'no', 'f', 'false'):
+                        legacy = False
+                    elif val.lower() in ('', '1', 'y', 'yes', 't', 'true'):
+                        legacy = True
+                    else:
+                        raise cls.InvalidSignerURI(f'{uri} is not a valid ledger URI: invalid legacy value {val}')
+                elif key == 'count':
+                    try:
+                        count = int(val)
+                    except ValueError as exc:
+                        raise cls.InvalidSignerURI(f'{uri} is not a valid ledger URI: invalid count value {exc}')
+                else:
+                    raise cls.InvalidSignerURI(f'{uri} is not a valid ledger URI: unknown parameter {key}')
+
+        return cls(testnet=testnet, path=path, count=count, legacy=legacy)
+
+    @property
+    def accounts(self) -> List[str]:
+        """Returns a list of cached ledger checksum addresses from initial derivation."""
+        return list(self.__addresses.keys())
+
+    def sign_message(self, message: bytes, checksum_address: str) -> HexBytes:
+        """
+        Signs a message with a ledger hardware wallet.
+        """
+        raise self.SignerError('message signing not implemented')
+
+    def __sanity_check_chain_id(self, chain_id: int):
+        if not self.__testnet and chain_id != self.__CHAIN_ID_MAINNET:
+            raise self.SignerError(f'invalid chain id {chain_id} for mainnet.')
+
+        if self.__testnet and chain_id not in (
+            self.__CHAIN_ID_ROPSTEN,
+            self.__CHAIN_ID_RINKEBY,
+            self.__CHAIN_ID_GOERLI,
+            self.__CHAIN_ID_KOVAN,
+        ):
+            raise self.SignerError(f'invalid chain id {chain_id} for testnet.')
+
+    def sign_transaction(self,
+                         transaction_dict: dict,
+                         rlp_encoded: bool = True
+                         ) -> Union[HexBytes, Transaction]:
+        """
+        Sign a transaction with a ledger hardware wallet.
+        """
+        try:
+            self.__sanity_check_chain_id(transaction_dict['chainId'])
+        except KeyError:
+            raise self.SignerError('"chain_id" field is missing in ledger signing request.')
+
+        try:
+            sender_address = transaction_dict['from']
+        except KeyError:
+            raise self.SignerError("'from' field is missing from ledger signing request.")
+
+        try:
+            sender_acct = self.__addresses[sender_address]
+        except KeyError:
+            raise self.SignerError(f"{checksum_address} was not loaded into the device address cache.")
+
+        ledger_tx = LedgerTransaction(
+            nonce=transaction_dict['nonce'],
+            gasprice=transaction_dict['gasPrice'],
+            startgas=transaction_dict['gas'],
+            to=to_canonical_address(transaction_dict['to']),
+            value=transaction_dict['value'],
+            data=decode_hex(transaction_dict['data']),
+        )
+
+        stx = ledger_sign_transaction(tx=ledger_tx, sender_path=sender_acct.path)
+
+        if rlp_encoded:
+            return HexBytes(stx.raw_transaction())
+
+        return Transaction(v=stx.v, r=stx.r, s=stx.s, **stx)
