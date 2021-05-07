@@ -106,7 +106,7 @@ def test_upgrading(testerchain, token, token_economics, deploy_contract):
     testerchain.wait_for_receipt(tx)
     tx = contract.functions.commitToNextPeriod().transact({'from': worker})
     testerchain.wait_for_receipt(tx)
-    testerchain.time_travel(hours=2)
+    testerchain.time_travel(hours=20)
     tx = contract.functions.commitToNextPeriod().transact({'from': worker})
     testerchain.wait_for_receipt(tx)
 
@@ -332,7 +332,7 @@ def test_re_stake(testerchain, token, escrow_contract):
     testerchain.wait_for_receipt(tx)
     tx = escrow.functions.commitToNextPeriod().transact({'from': staker})
     testerchain.wait_for_receipt(tx)
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     period = escrow.functions.getCurrentPeriod().call()
     assert sub_stake == escrow.functions.getAllTokens(staker).call()
     assert sub_stake == escrow.functions.getLockedTokens(staker, 0).call()
@@ -342,7 +342,7 @@ def test_re_stake(testerchain, token, escrow_contract):
     # Make a commitment and try to mint without re-stake
     tx = escrow.functions.commitToNextPeriod().transact({'from': staker})
     testerchain.wait_for_receipt(tx)
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     period = escrow.functions.getCurrentPeriod().call()
     assert sub_stake == escrow.functions.getAllTokens(staker).call()
     assert sub_stake == escrow.functions.getLockedTokens(staker, 0).call()
@@ -371,7 +371,7 @@ def test_re_stake(testerchain, token, escrow_contract):
     # Make a commitment and try to mint with re-stake
     tx = escrow.functions.commitToNextPeriod().transact({'from': staker})
     testerchain.wait_for_receipt(tx)
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     period = escrow.functions.getCurrentPeriod().call()
     assert sub_stake == escrow.functions.getAllTokens(staker).call()
     assert sub_stake == escrow.functions.getLockedTokens(staker, 0).call()
@@ -388,7 +388,7 @@ def test_re_stake(testerchain, token, escrow_contract):
     assert new_sub_stake == escrow.functions.lockedPerPeriod(period).call()
 
     # Mint with re-stake again
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     period = escrow.functions.getCurrentPeriod().call()
     sub_stake = new_sub_stake
     assert sub_stake == escrow.functions.getAllTokens(staker).call()
@@ -427,12 +427,12 @@ def test_re_stake(testerchain, token, escrow_contract):
     testerchain.wait_for_receipt(tx)
     tx = escrow.functions.commitToNextPeriod().transact({'from': staker2})
     testerchain.wait_for_receipt(tx)
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     tx = escrow.functions.commitToNextPeriod().transact({'from': staker})
     testerchain.wait_for_receipt(tx)
     tx = escrow.functions.commitToNextPeriod().transact({'from': staker2})
     testerchain.wait_for_receipt(tx)
-    testerchain.time_travel(hours=2)
+    testerchain.time_travel(hours=20)
     # Checks preparation
     period = escrow.functions.getCurrentPeriod().call()
     assert stake == escrow.functions.getAllTokens(staker).call()
@@ -480,7 +480,7 @@ def test_re_stake(testerchain, token, escrow_contract):
     # Make a commitment and try to mint without re-stake
     tx = escrow.functions.commitToNextPeriod().transact({'from': staker})
     testerchain.wait_for_receipt(tx)
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
 
     # Now turn off re-stake
     tx = escrow.functions.setReStake(False).transact({'from': staker})
@@ -495,7 +495,7 @@ def test_re_stake(testerchain, token, escrow_contract):
     assert not event_args['reStake']
 
     # Check before minting
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     period = escrow.functions.getCurrentPeriod().call()
     sub_stake = escrow.functions.getLockedTokensInPast(staker, 1).call()
     assert sub_stake == escrow.functions.getLockedTokens(staker, 0).call()
@@ -609,7 +609,7 @@ def test_worker(testerchain, token, escrow_contract, deploy_contract):
         testerchain.wait_for_receipt(tx)
 
     # Let's advance one period and unbond the worker
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     tx = intermediary1.functions.bondWorker(NULL_ADDRESS).transact({'from': staker1})
     testerchain.wait_for_receipt(tx)
     assert NULL_ADDRESS == escrow.functions.getWorkerFromStaker(intermediary1.address).call()
@@ -668,7 +668,7 @@ def test_worker(testerchain, token, escrow_contract, deploy_contract):
         testerchain.wait_for_receipt(tx)
 
     # Bond worker again
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     tx = intermediary2.functions.bondWorker(staker2).transact({'from': staker2})
     testerchain.wait_for_receipt(tx)
     assert staker2 == escrow.functions.getWorkerFromStaker(intermediary2.address).call()
@@ -692,7 +692,7 @@ def test_worker(testerchain, token, escrow_contract, deploy_contract):
     assert NULL_ADDRESS == escrow.functions.getWorkerFromStaker(worker1).call()
 
     # Ursula can't bond the first worker again because worker is a staker now
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     with pytest.raises((TransactionFailed, ValueError)):
         tx = intermediary1.functions.bondWorker(worker1).transact({'from': staker1})
         testerchain.wait_for_receipt(tx)
@@ -717,7 +717,7 @@ def test_worker(testerchain, token, escrow_contract, deploy_contract):
     testerchain.wait_for_receipt(tx)
 
     # Ursula bond worker again
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     tx = escrow.functions.bondWorker(worker3).transact({'from': ursula3})
     testerchain.wait_for_receipt(tx)
     assert ursula3 == escrow.functions.stakerFromWorker(worker3).call()
@@ -735,7 +735,7 @@ def test_worker(testerchain, token, escrow_contract, deploy_contract):
     testerchain.wait_for_receipt(tx)
 
     # Ursula try to bond contract as worker
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     tx = escrow.functions.bondWorker(intermediary3.address).transact({'from': ursula3})
     testerchain.wait_for_receipt(tx)
 
@@ -781,7 +781,7 @@ def test_measure_work(testerchain, token, worklock, escrow_contract):
     # Make a commitment and mint to check that work is not measured by default
     tx = escrow.functions.commitToNextPeriod().transact({'from': staker})
     testerchain.wait_for_receipt(tx)
-    testerchain.time_travel(hours=2)
+    testerchain.time_travel(hours=20)
     tx = escrow.functions.mint().transact({'from': staker})
     testerchain.wait_for_receipt(tx)
     assert escrow.functions.getAllTokens(staker).call() > stake
@@ -800,7 +800,7 @@ def test_measure_work(testerchain, token, worklock, escrow_contract):
 
     tx = escrow.functions.commitToNextPeriod().transact({'from': staker})
     testerchain.wait_for_receipt(tx)
-    testerchain.time_travel(hours=2)
+    testerchain.time_travel(hours=20)
     tx = escrow.functions.mint().transact({'from': staker})
     testerchain.wait_for_receipt(tx)
     reward = escrow.functions.getAllTokens(staker).call() - stake
@@ -812,7 +812,7 @@ def test_measure_work(testerchain, token, worklock, escrow_contract):
     work_done = escrow.functions.getCompletedWork(staker).call()
     tx = escrow.functions.commitToNextPeriod().transact({'from': staker})
     testerchain.wait_for_receipt(tx)
-    testerchain.time_travel(hours=2)
+    testerchain.time_travel(hours=20)
     tx = escrow.functions.mint().transact({'from': staker})
     testerchain.wait_for_receipt(tx)
     reward = escrow.functions.getAllTokens(staker).call() - stake
@@ -833,7 +833,7 @@ def test_measure_work(testerchain, token, worklock, escrow_contract):
 
     tx = escrow.functions.commitToNextPeriod().transact({'from': staker})
     testerchain.wait_for_receipt(tx)
-    testerchain.time_travel(hours=2)
+    testerchain.time_travel(hours=20)
     tx = escrow.functions.mint().transact({'from': staker})
     testerchain.wait_for_receipt(tx)
     reward = escrow.functions.getAllTokens(staker).call() - stake
@@ -894,7 +894,7 @@ def test_wind_down(testerchain, token, escrow_contract, token_economics):
     testerchain.wait_for_receipt(tx)
     check_last_period()
 
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     check_last_period()
     tx = escrow.functions.commitToNextPeriod().transact({'from': staker})
     testerchain.wait_for_receipt(tx)
@@ -920,14 +920,14 @@ def test_wind_down(testerchain, token, escrow_contract, token_economics):
     # Enabling wind-down will affect duration only after next making a commitment
     check_last_period()
 
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     duration -= 1
     check_last_period()
     tx = escrow.functions.commitToNextPeriod().transact({'from': staker})
     testerchain.wait_for_receipt(tx)
     check_last_period()
 
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     duration -= 1
     check_last_period()
 
@@ -946,7 +946,7 @@ def test_wind_down(testerchain, token, escrow_contract, token_economics):
     testerchain.wait_for_receipt(tx)
     check_last_period()
 
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     check_last_period()
 
     # Turn on wind-down and make a commitment, duration will be reduced in the next period
@@ -961,7 +961,7 @@ def test_wind_down(testerchain, token, escrow_contract, token_economics):
     testerchain.wait_for_receipt(tx)
     check_last_period()
 
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     duration -= 1
     check_last_period()
 
@@ -985,7 +985,7 @@ def test_wind_down(testerchain, token, escrow_contract, token_economics):
     tx = escrow.functions.setWindDown(True).transact({'from': staker})
     testerchain.wait_for_receipt(tx)
     for i in range(duration - 1):
-        testerchain.time_travel(hours=1)
+        testerchain.time_travel(hours=10)
         tx = escrow.functions.commitToNextPeriod().transact({'from': staker})
         testerchain.wait_for_receipt(tx)
 
@@ -1001,7 +1001,7 @@ def test_wind_down(testerchain, token, escrow_contract, token_economics):
     testerchain.wait_for_receipt(tx)
     check_last_period()
 
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     check_last_period()
     tx = escrow.functions.setWindDown(True).transact({'from': staker})
     testerchain.wait_for_receipt(tx)
@@ -1039,7 +1039,7 @@ def test_wind_down(testerchain, token, escrow_contract, token_economics):
     check_last_period()
     check_first_sub_stake(1)
 
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     check_last_period()
     check_first_sub_stake(1)
     tx = escrow.functions.commitToNextPeriod().transact({'from': staker})
@@ -1054,7 +1054,7 @@ def test_wind_down(testerchain, token, escrow_contract, token_economics):
     check_first_sub_stake(1)
 
     # Switching winding down parameter doesn't affect sub-stake which will end in the current period
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     duration -= 1
     check_last_period()
     check_first_sub_stake(0)
@@ -1084,7 +1084,7 @@ def test_wind_down(testerchain, token, escrow_contract, token_economics):
     # Only second sub-stake (which has not yet finished) will be freeze
     tx = escrow.functions.setWindDown(False).transact({'from': staker})
     testerchain.wait_for_receipt(tx)
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     check_last_period()
     assert sub_stake == escrow.functions.getLockedTokens(staker, 0).call()
 
@@ -1092,12 +1092,12 @@ def test_wind_down(testerchain, token, escrow_contract, token_economics):
     tx = escrow.functions.setWindDown(True).transact({'from': staker})
     testerchain.wait_for_receipt(tx)
     for i in range(duration):
-        testerchain.time_travel(hours=1)
+        testerchain.time_travel(hours=10)
         tx = escrow.functions.commitToNextPeriod().transact({'from': staker})
         testerchain.wait_for_receipt(tx)
 
     # Switching winding down parameter doesn't affect sub-stake which will end in the current period
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     duration = 0
     check_last_period()
     tx = escrow.functions.setWindDown(False).transact({'from': staker})
@@ -1321,7 +1321,7 @@ def test_snapshots(testerchain, token, escrow_contract):
     assert expected_staker1_balance == get_staker_history_from_storage(staker1)
     assert expected_global_balance == get_global_history_from_storage()
 
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     assert now < testerchain.get_block_number()
     now = testerchain.get_block_number()
     assert initial_deposit == escrow.functions.totalStakedForAt(staker1, now).call()
@@ -1333,7 +1333,7 @@ def test_snapshots(testerchain, token, escrow_contract):
     # 2nd making a commitment, still no change in balance
     tx = escrow.functions.commitToNextPeriod().transact({'from': staker1})
     testerchain.wait_for_receipt(tx)
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     assert now < testerchain.get_block_number()
     now = testerchain.get_block_number()
     assert initial_deposit == escrow.functions.totalStakedForAt(staker1, now).call()
@@ -1442,7 +1442,7 @@ def test_remove_inactive_sub_stakes(testerchain, token, escrow_contract, token_e
     for i in range(2):
         tx = escrow.functions.deposit(staker, sub_stake, duration + 1).transact({'from': staker})
         testerchain.wait_for_receipt(tx)
-        testerchain.time_travel(hours=1)
+        testerchain.time_travel(hours=10)
     assert escrow.functions.getLockedTokens(staker, 1).call() == 5 * sub_stake
 
     tx = escrow.functions.mergeStake(1, 0).transact({'from': staker})
@@ -1511,7 +1511,7 @@ def test_remove_inactive_sub_stakes(testerchain, token, escrow_contract, token_e
     for i in range(duration):
         tx = escrow.functions.commitToNextPeriod().transact({'from': staker})
         testerchain.wait_for_receipt(tx)
-        testerchain.time_travel(hours=1)
+        testerchain.time_travel(hours=10)
 
     current_period = escrow.functions.getCurrentPeriod().call()
     assert escrow.functions.getSubStakeInfo(staker, 0).call() == [initial_period + 2, 0, 1, 2 * sub_stake]
@@ -1532,7 +1532,7 @@ def test_remove_inactive_sub_stakes(testerchain, token, escrow_contract, token_e
         tx = escrow.functions.removeUnusedSubStake(1).transact({'from': staker})
         testerchain.wait_for_receipt(tx)
 
-    testerchain.time_travel(hours=1)
+    testerchain.time_travel(hours=10)
     current_period = escrow.functions.getCurrentPeriod().call()
     assert escrow.functions.getSubStakeInfo(staker, 0).call() == [initial_period + 2, current_period, 0, 2 * sub_stake]
     assert escrow.functions.getSubStakeInfo(staker, 1).call() == [initial_period + 1, current_period - 1, 0, 3 * sub_stake]

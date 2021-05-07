@@ -243,19 +243,19 @@ def test_policy_manager_migration(testerchain, token_economics, deploy_contract)
         assert contract.functions.getNodeFeeDelta(node, (policy_first_period + number_of_periods) // 2).call() == 0
 
     assert contract.functions.nodes(node1).call()[FEE_FIELD] == 0
-    assert contract.functions.nodes(node1).call()[PREVIOUS_FEE_PERIOD_FIELD] == (policy_first_period - 1) // 2
+    assert contract.functions.nodes(node1).call()[PREVIOUS_FEE_PERIOD_FIELD] == current_period - 1
     assert contract.functions.nodes(node1).call()[FEE_RATE_FIELD] == 0
 
     assert contract.functions.nodes(node2).call()[FEE_FIELD] == 0
-    assert contract.functions.nodes(node2).call()[PREVIOUS_FEE_PERIOD_FIELD] == (policy_first_period - 1) // 2
+    assert contract.functions.nodes(node2).call()[PREVIOUS_FEE_PERIOD_FIELD] == current_period - 1
     assert contract.functions.nodes(node2).call()[FEE_RATE_FIELD] == 0
 
     assert contract.functions.nodes(node3).call()[FEE_FIELD] == 2 * rate
-    assert contract.functions.nodes(node3).call()[PREVIOUS_FEE_PERIOD_FIELD] == (policy_first_period + 1) // 2
+    assert contract.functions.nodes(node3).call()[PREVIOUS_FEE_PERIOD_FIELD] == current_period - 1
     assert contract.functions.nodes(node3).call()[FEE_RATE_FIELD] == 0
 
     assert contract.functions.nodes(node4).call()[FEE_FIELD] == 0
-    assert contract.functions.nodes(node4).call()[PREVIOUS_FEE_PERIOD_FIELD] == (policy_first_period + 1) // 2
+    assert contract.functions.nodes(node4).call()[PREVIOUS_FEE_PERIOD_FIELD] == current_period - 1
     assert contract.functions.nodes(node4).call()[FEE_RATE_FIELD] == 0
 
     tx = escrow.functions.ping(node1, current_period - 1, 0, current_period + 1).transact()
@@ -318,3 +318,73 @@ def test_policy_manager_migration(testerchain, token_economics, deploy_contract)
     assert contract.functions.genesisSecondsPerPeriod().call() == token_economics.seconds_per_period
     assert contract.functions.secondsPerPeriod().call() == 2 * token_economics.seconds_per_period
     assert contract.functions.getCurrentPeriod().call() == current_period // 2
+
+
+def test_previous_fee_period(testerchain, token_economics, deploy_contract):
+    creator, node1, *everyone_else = testerchain.client.accounts
+
+    # Deploy StakingEscrow mock
+    escrow, _ = deploy_contract(
+        contract_name='StakingEscrowForPolicyMock',
+        _genesisHoursPerPeriod=token_economics.genesis_hours_per_period,
+        _hoursPerPeriod=token_economics.genesis_hours_per_period
+    )
+
+    # Deploy old contract
+    policy_manager_old_library, _ = deploy_contract(contract_name='PolicyManagerOld', _escrow=escrow.address)
+    dispatcher, _ = deploy_contract('Dispatcher', policy_manager_old_library.address)
+
+    contract = testerchain.client.get_contract(
+        abi=policy_manager_old_library.abi,
+        address=dispatcher.address,
+        ContractFactoryClass=Contract)
+    assert contract.functions.secondsPerPeriod().call() == token_economics.genesis_seconds_per_period
+
+    current_period = contract.functions.getCurrentPeriod().call()
+    if current_period % 2 == 0:
+        testerchain.time_travel(hours=token_economics.genesis_hours_per_period)
+
+    # Register some nodes
+    current_period = contract.functions.getCurrentPeriod().call()
+    tx = escrow.functions.setPolicyManager(contract.address).transact()
+    testerchain.wait_for_receipt(tx)
+    tx = escrow.functions.register(node1).transact()
+    testerchain.wait_for_receipt(tx)
+
+    assert contract.functions.nodes(node1).call()[FEE_FIELD] == 0
+    assert contract.functions.nodes(node1).call()[PREVIOUS_FEE_PERIOD_FIELD] == current_period - 1
+    assert contract.functions.nodes(node1).call()[FEE_RATE_FIELD] == 0
+
+    # Redeploy StakingEscrow mock
+    escrow, _ = deploy_contract(
+        contract_name='StakingEscrowForPolicyMock',
+        _genesisHoursPerPeriod=token_economics.genesis_hours_per_period,
+        _hoursPerPeriod=token_economics.hours_per_period
+    )
+    tx = escrow.functions.setPolicyManager(dispatcher.address).transact()
+    testerchain.wait_for_receipt(tx)
+
+    # Deploy new version of the contract
+    policy_manager_library, _ = deploy_contract(contract_name='PolicyManager',
+                                                _escrowDispatcher=escrow.address,
+                                                _escrowImplementation=escrow.address)
+    contract = testerchain.client.get_contract(
+        abi=policy_manager_library.abi,
+        address=dispatcher.address,
+        ContractFactoryClass=Contract)
+
+    tx = dispatcher.functions.upgrade(policy_manager_library.address).transact()
+    testerchain.wait_for_receipt(tx)
+
+    # Node migration
+    tx = escrow.functions.migrate(node1).transact()
+    testerchain.wait_for_receipt(tx)
+
+    current_period = contract.functions.getCurrentPeriod().call()
+    assert contract.functions.nodes(node1).call()[FEE_FIELD] == 0
+    assert contract.functions.nodes(node1).call()[PREVIOUS_FEE_PERIOD_FIELD] == current_period - 1
+    assert contract.functions.nodes(node1).call()[FEE_RATE_FIELD] == 0
+
+    # Check ping() method
+    tx = escrow.functions.ping(node1, 0, 0, 0).transact()
+    testerchain.wait_for_receipt(tx)

@@ -428,13 +428,13 @@ def test_intercontract_migration(testerchain, token_economics, token, deploy_con
     assert staker_info == [stake_2, 0, current_period + 1, 1, 0, 0, first_period // 2, staker2]
 
     assert policy_manager.functions.nodes(staker2).call()[FEE_FIELD] == rate
-    assert policy_manager.functions.nodes(staker2).call()[PREVIOUS_FEE_PERIOD_FIELD] == (some_policy_period - 3) // 2
+    assert policy_manager.functions.nodes(staker2).call()[PREVIOUS_FEE_PERIOD_FIELD] == current_period - 1
     assert policy_manager.functions.nodes(staker2).call()[FEE_RATE_FIELD] == 0
 
     tx = escrow.functions.migrate(staker2).transact()
     testerchain.wait_for_receipt(tx)
     assert escrow.functions.getLastCommittedPeriod(staker2).call() == current_period + 1
-    assert policy_manager.functions.nodes(staker2).call()[PREVIOUS_FEE_PERIOD_FIELD] == (some_policy_period - 3) // 2
+    assert policy_manager.functions.nodes(staker2).call()[PREVIOUS_FEE_PERIOD_FIELD] == current_period - 1
 
     events = migration_log.get_all_entries()
     assert len(events) == 2

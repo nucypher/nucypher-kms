@@ -555,13 +555,17 @@ class StakingEscrowAgent(EthereumContractAgent):
         return txhash_or_receipt
 
     @contract_api(TRANSACTION)
-    def mint(self, transacting_power: TransactingPower) -> TxReceipt:
+    def mint(self, transacting_power: TransactingPower, staker_address: ChecksumAddress = None) -> TxReceipt:
         """
         Computes reward tokens for the staker's account;
         This is only used to calculate the reward for the final period of a stake,
         when you intend to withdraw 100% of tokens.
         """
-        contract_function: ContractFunction = self.contract.functions.mint()
+        contract_function: ContractFunction
+        if staker_address is None:
+            contract_function = self.contract.functions.mint()
+        else:
+            contract_function = self.contract.functions.mint(staker_address)
         receipt: TxReceipt = self.blockchain.send_transaction(contract_function=contract_function,
                                                               transacting_power=transacting_power)
         return receipt

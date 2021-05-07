@@ -422,10 +422,12 @@ def test_merge(agency, testerchain, test_registry, token_economics):
 def test_remove_inactive_stake(agency, testerchain, test_registry):
     staking_agent = ContractAgency.get_agent(StakingEscrowAgent, registry=test_registry)
     staker_account = testerchain.unassigned_accounts[0]
+    other_account = testerchain.unassigned_accounts[1]
     staker_power = TransactingPower(account=staker_account, signer=Web3Signer(testerchain.client))
+    other_power = TransactingPower(account=other_account, signer=Web3Signer(testerchain.client))
 
     testerchain.time_travel(periods=1)
-    staking_agent.mint(transacting_power=staker_power)
+    staking_agent.mint(transacting_power=other_power, staker_address=staker_account)
     current_period = staking_agent.get_current_period()
     original_stakes = list(staking_agent.get_all_stakes(staker_address=staker_account))
     assert original_stakes[2].last_period == current_period - 1
