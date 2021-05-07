@@ -558,7 +558,7 @@ class WorkTracker:
         self._tracking_task.clock = self.CLOCK
 
         self.__pending = dict()  # TODO: Prime with pending worker transactions
-        self.__num_dropped_txs = 0
+        self.__has_untracked_tx = False
         self.__requirement = None
         self.__current_period = None
         self.__start_time = NOT_STAKING
@@ -634,7 +634,6 @@ class WorkTracker:
             self._consecutive_fails += 1
             self.start(commit_now=commit_now)
 
-
     def __work_requirement_is_satisfied(self) -> bool:
         # TODO: Check for stake expiration and exit
         if self.__requirement is None:
@@ -649,28 +648,38 @@ class WorkTracker:
         return self.__pending.copy()
 
     def __commitments_tracker_is_consistent(self) -> bool:
-        worker_address = self.worker.worker_address
-        tx_count_pending = self.client.get_transaction_count(account=worker_address, pending=True)
-        tx_count_latest = self.client.get_transaction_count(account=worker_address, pending=False)
+        self.__has_untracked_tx = False
+
+        pending_block = self.client.w3.eth.getBlock(block_identifier='pending', full_transactions=True)
+        tx_pending = [
+            tx.hash for tx in pending_block['transactions']
+            if tx.hash in self.__pending.values()
+        ]
+        tx_count_pending = len(tx_pending)
+        tx_count_latest = self.client.get_transaction_count(account=self.worker.worker_address, pending=False)
         txs_in_mempool = tx_count_pending - tx_count_latest
+        has_untracked_tx = bool(set(tx_pending) - set(self.__pending.values()))
 
         if len(self.__pending) == txs_in_mempool:
             return True  # OK!
 
         if txs_in_mempool > len(self.__pending):  # We're missing some pending TXs
             return False
-        else:
-            # Note: mempool has limit on the number on TXs, and may drop them resulting in missing pending TXs
-            # TODO: Detect if this untracked pending transaction is a commitment transaction at all.
-            self.__num_dropped_txs = len(self.__pending) - txs_in_mempool
-            s = "s" if self.__num_dropped_txs > 1 else ""
-            self.log.info(f'{self.__num_dropped_txs} pending commitment transaction{s} have been dropped from mempool.')
-            return True
+
+        if has_untracked_tx:
+            # Mempool has limit on the number on TXs, and may drop them resulting in missing pending TXs
+            self.__has_untracked_tx = True
+            self.log.info(f'A pending commitment transaction has been dropped from mempool.')
+            return False
+
+        # txs_in_mempool < len(self.__pending)
+        # We are missing some Txs, but none of them are commitment TXs
+        return True
 
     def __track_pending_commitments(self) -> bool:
         # TODO: Keep a purpose-built persistent log of worker transaction history
 
-        unmined_transactions = self.__num_dropped_txs
+        unmined_transactions = 1 if self.__has_untracked_tx else 0
         pending_transactions = self.pending.items()    # note: this must be performed non-mutatively
         for tx_firing_block_number, txhash in sorted(pending_transactions):
             try:
@@ -700,8 +709,7 @@ class WorkTracker:
         del self.__pending[tx_firing_block_number]  # assume our original TX is stuck
 
     def __handle_replacement_commitment(self, current_block_number: int) -> None:
-        if self.__num_dropped_txs:
-            # TODO: Detect if this untracked pending transaction is a commitment transaction at all.
+        if self.__has_untracked_tx:
             message = f"We have an untracked pending transaction. Issuing a replacement transaction."
             tx_firing_block_number = 0
         else:
