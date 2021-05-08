@@ -64,7 +64,7 @@ from nucypher.characters.control.emitters import JSONRPCStdoutEmitter, StdoutEmi
 from nucypher.utilities.ethereum import encode_constructor_arguments
 from nucypher.utilities.gas_strategies import (
     construct_datafeed_median_strategy,
-    max_price_gas_strategy_wrapper,
+    linear_scaling_gas_strategy_wrapper, max_price_gas_strategy_wrapper,
     WEB3_GAS_STRATEGIES
 )
 from nucypher.utilities.logging import GlobalLoggerSettings, Logger
@@ -86,6 +86,7 @@ class BlockchainInterface:
 
     DEFAULT_GAS_STRATEGY = 'fast'
     GAS_STRATEGIES = WEB3_GAS_STRATEGIES
+    REPLACE_TX_GAS_FACTOR = 0.1  # From default geth TX pool config
 
     Web3 = Web3  # TODO: This is name-shadowing the actual Web3. Is this intentional?
 
@@ -304,6 +305,9 @@ class BlockchainInterface:
 
         configuration_message = f"Using gas strategy '{reported_gas_strategy}'"
 
+        # Order of applying strategy wrappers is significant
+        gas_strategy = linear_scaling_gas_strategy_wrapper(gas_strategy=gas_strategy,
+                                                           gas_price_factor=self.REPLACE_TX_GAS_FACTOR)
         if self.max_gas_price:
             __price = Web3.toWei(self.max_gas_price, 'gwei')  # from gwei to wei
             gas_strategy = max_price_gas_strategy_wrapper(gas_strategy=gas_strategy, max_gas_price_wei=__price)
@@ -508,7 +512,9 @@ class BlockchainInterface:
                 # explicitly estimate gas here with block identifier 'latest' if not otherwise specified
                 # as a pending transaction can cause gas estimation to fail, notably in case of worklock refunds.
                 payload['gas'] = contract_function.estimateGas(payload, block_identifier='latest')
+                payload['_is_replacement_tx'] = use_pending_nonce
             transaction_dict = contract_function.buildTransaction(payload)
+            transaction_dict.pop('_is_replacement_tx', None)
         except (TestTransactionFailed, ValidationError, ValueError) as error:
             # Note: Geth (1.9.15) raises ValueError in the same condition that pyevm raises ValidationError here.
             # Treat this condition as "Transaction Failed" during gas estimation.

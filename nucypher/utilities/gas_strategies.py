@@ -57,6 +57,23 @@ def max_price_gas_strategy_wrapper(gas_strategy: Callable, max_gas_price_wei: in
 
 
 #
+# Linear Scaling Gas Price Strategy Wrapper
+#
+
+def linear_scaling_gas_strategy_wrapper(gas_strategy: Callable, gas_price_factor: float) -> Callable:
+    """
+    Linearly scales gas price from a given gas strategy for replacement transactions.
+    """
+
+    def _wrapper(web3, transaction_params):
+        gas_price = gas_strategy(web3, transaction_params)
+        if transaction_params.get('_is_replacement_tx', False):
+            gas_price = round(gas_price * gas_price_factor)
+        return gas_price
+
+    return _wrapper
+
+#
 # Datafeed gas strategies
 #
 
