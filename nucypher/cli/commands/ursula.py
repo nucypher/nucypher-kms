@@ -14,11 +14,17 @@
  You should have received a copy of the GNU Affero General Public License
  along with nucypher.  If not, see <https://www.gnu.org/licenses/>.
 """
-
+import os
+import shutil
+import tempfile
+from operator import attrgetter
+from pathlib import Path
 
 import click
+import pyzipper
 
 from nucypher.blockchain.eth.signers.software import ClefSigner
+from nucypher.characters.control.emitters import StdoutEmitter
 from nucypher.cli.actions.auth import get_client_password, get_nucypher_password
 from nucypher.cli.actions.configure import (
     destroy_configuration,
@@ -60,6 +66,7 @@ from nucypher.cli.types import EIP55_CHECKSUM_ADDRESS, NETWORK_PORT, WORKER_IP
 from nucypher.cli.utils import make_cli_character, setup_emitter
 from nucypher.config.characters import UrsulaConfiguration
 from nucypher.config.constants import (
+    DEFAULT_CONFIG_ROOT,
     NUCYPHER_ENVVAR_WORKER_ETH_PASSWORD,
     TEMPORARY_DOMAIN
 )
@@ -444,3 +451,143 @@ def _pre_launch_warnings(emitter, dev, force):
         emitter.echo(DEVELOPMENT_MODE_WARNING, color='yellow', verbosity=1)
     if force:
         emitter.echo(FORCE_MODE_WARNING, color='yellow', verbosity=1)
+
+
+BACKUP_ENCRYPTION_SETTINGS = {'encryption': pyzipper.WZ_AES, 'nbits': 256}
+WORKER_ARCHIVE_ROOT = "worker"
+KEYSTORE_ARCHIVE_ROOT = "keystore"
+
+
+class BackupCliOptions:
+    __option_name__ = 'backup_options'
+
+    def __init__(self,
+                 worker_path: str,
+                 keystore_path: str,
+                 backup_path: str,
+                 password: str,
+                 overwrite: bool,
+                 ) -> None:
+        self.worker_path = Path(worker_path)
+        self.keystore_path = Path(keystore_path)
+        self.backup_path = Path(backup_path)
+        self.password = password.encode()
+        self.overwrite = overwrite
+
+
+backup_cli_options = group_options(
+    BackupCliOptions,
+    password=click.option('--password',
+                          help="Enter backup password",
+                          prompt="Enter backup password",
+                          hide_input=True,
+                          confirmation_prompt=True),
+    worker_path=click.option('--worker-path',
+                             help="Path to Ursula worker directory",
+                             prompt="Path to Ursula worker directory",
+                             type=click.Path(),
+                             required=True,
+                             default=DEFAULT_CONFIG_ROOT),
+    keystore_path=click.option('--keystore-path',
+                               help="Path to Ursula keystore directory",
+                               prompt="Path to Ursula keystore directory",
+                               type=click.Path(),
+                               required=True,
+                               default=Path.home() / ".ethereum/keystore"),  # TODO: use env var?
+    backup_path=click.option('--backup-path',
+                             help="Path to backup file",
+                             prompt="Path to backup file",
+                             type=click.Path(dir_okay=False),
+                             default=Path("./ursula-backup.zip"),
+                             required=True),
+    overwrite=click.option('--overwrite',
+                           help="Overwrite existing backup",
+                           default=False)
+)
+
+
+@ursula.command()
+@group_config_options
+@group_general_config
+@backup_cli_options
+def backup(general_config, config_options, backup_options):
+    """
+    Backup the Ursula node's configuration.
+    """
+    emitter = setup_emitter(general_config, config_options.worker_address)
+    worker_path, keystore_path, backup_path, password, overwrite = (
+        attrgetter('worker_path', 'keystore_path', 'backup_path', 'password', 'overwrite')(backup_options))
+
+    for path in [worker_path, keystore_path]:
+        if not path.exists():
+            raise FileNotFoundError(f'Path does not exist: {path.absolute()}')
+
+    if backup_path.exists() and not overwrite:
+        prompt = f"Path already exists: {backup_path}\nOverwrite?"
+        click.confirm(prompt, abort=True)
+
+    with pyzipper.AESZipFile(backup_path, 'w', encryption=pyzipper.WZ_AES) as zf:
+        zf.setpassword(password)
+        zf.setencryption(**BACKUP_ENCRYPTION_SETTINGS)
+        _write_zf(emitter, zf, worker_path, WORKER_ARCHIVE_ROOT)
+        _write_zf(emitter, zf, keystore_path, KEYSTORE_ARCHIVE_ROOT)
+
+
+def _write_zf(emitter: StdoutEmitter, zf: pyzipper.ZipFile, source: Path, archive_root: str):
+    archive_root = Path(archive_root)
+
+    def _write(file_path_, archive_path_):
+        emitter.echo(f"Wrote {str(file_path_.absolute())} to {str(archive_path_.absolute())}", verbosity=2)
+        zf.write(file_path_, arcname=archive_path_)
+
+    if source.is_file():
+        _write(source, archive_root / source.name)
+    else:
+        for root_path, dirs, files in os.walk(source):
+            for file in files:
+                file_path = Path(root_path, file)
+                archive_path = archive_root / file_path.relative_to(source.parent.absolute())
+                _write(file_path, archive_path)
+
+    emitter.echo(f"Wrote f{source}")
+
+
+@ursula.command()
+@group_config_options
+@group_general_config
+@backup_cli_options
+def restore(general_config, config_options, backup_options):
+    """
+    Restore the Ursula node's configuration.
+    """
+    emitter = setup_emitter(general_config, config_options.worker_address)
+    worker_path, keystore_path, backup_path, password, overwrite = (
+        attrgetter('worker_path', 'keystore_path', 'backup_path', 'password', 'overwrite')(backup_options))
+
+    if not backup_path.exists():
+        raise FileNotFoundError(f'Backup file does not exist: {backup_path.absolute()}')
+
+    with pyzipper.AESZipFile(backup_path) as zf:
+        zf.setpassword(password)
+        zf.setencryption(**BACKUP_ENCRYPTION_SETTINGS)
+        _read_zf(emitter, zf, KEYSTORE_ARCHIVE_ROOT, keystore_path, overwrite)
+        _read_zf(emitter, zf, WORKER_ARCHIVE_ROOT, worker_path, overwrite)
+
+
+def _read_zf(emitter: StdoutEmitter, zf: pyzipper.ZipFile, archive_root: str, destination_path: Path, overwrite: bool):
+    if destination_path.exists() and not overwrite:
+        prompt = f"Path already exists: {destination_path}\nOverwrite?"
+        click.confirm(prompt, abort=True)
+
+    # Using temporary dir as a workaround for "zf.extract" always treating "archive_item" as a relative path
+    temp_dir = tempfile.mkdtemp()
+    for archive_item in zf.namelist():
+        if archive_item.startswith(archive_root):
+            zf.extract(archive_item, temp_dir)
+            emitter.echo(f"Extracted {archive_item}", verbosity=2)
+
+    archive_path = Path(temp_dir, archive_root)
+    if archive_path.exists():
+        shutil.move(archive_path, destination_path)
+
+    emitter.echo(f"Wrote {destination_path.absolute()}")
