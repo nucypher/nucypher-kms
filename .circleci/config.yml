@@ -403,11 +403,11 @@ commands:
     description: "Install NuCypher with Pip"
     steps:
       - run:
-          name: Install Python Development Dependencies with Pip (Workaround for problem with pip resolver. See 2493)
-          command: |
-            python -m pip install pip==20.2.4
-            pip3 --version
-            pip3 install --user -e .[dev]
+          name: Install Python Development Dependencies with Pip
+          command: pip3 install --user -e .[dev]
+      - run:
+          name: Check that pip installed package is importable
+          command: python -c "import nucypher"
       - run:
           name: Install Solidity Compiler
           command: python3 ./scripts/installation/install_solc.py
